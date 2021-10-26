@@ -1,0 +1,41 @@
+public enum TokenType {
+    // MARK: Keywords
+    case keywordConfigMacros
+    case keywordExportAs
+    case keywordPrivate
+    case keywordConflict
+    case keywordFramework
+    case keywordRequires
+    case keywordExclude
+    case keywordHeader
+    case keywordTextual
+    case keywordExplicit
+    case keywordLink
+    case keywordUmbrella
+    case keywordExtern
+    case keywordModule
+    case keywordUse
+    case keywordExport
+}
+
+extension TokenType {
+    /// A mapping of reserved keywords to their token type
+    static let tokenTypesForKeyword: [String: TokenType] = [
+        "config_macros": keywordConfigMacros,
+        "export_as": keywordExportAs,
+        "private": keywordPrivate,
+        "conflict": keywordConflict,
+        "framework": keywordFramework,
+        "requires": keywordRequires,
+        "exclude": keywordExclude,
+        "header": keywordHeader,
+        "textual": keywordTextual,
+        "explicit": keywordExplicit,
+        "link": keywordLink,
+        "umbrella": keywordUmbrella,
+        "extern": keywordExtern,
+        "module": keywordModule,
+        "use": keywordUse,
+        "export": keywordExport
+    ]
+}
