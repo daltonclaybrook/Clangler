@@ -1,11 +1,23 @@
 /// A unit of the module map language
 public struct Token {
     /// The type of the token
-    let type: TokenType
+    public let type: TokenType
     /// The line number where the token appears in the source file
-    let line: Int
+    public let line: Int
     /// The column number where the token appears in the source file
-    let column: Int
+    public let column: Int
     /// The character string which makes up the token
-    let lexeme: String
+    public let lexeme: String
+
+    public init(
+        type: TokenType,
+        line: Int,
+        column: Int,
+        lexeme: String
+    ) {
+        self.type = type
+        self.line = line
+        self.column = column
+        self.lexeme = lexeme
+    }
 }

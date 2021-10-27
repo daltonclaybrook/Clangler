@@ -4,6 +4,10 @@ import PackageDescription
 
 let package = Package(
     name: "Clangler",
+    platforms: [
+        .macOS(.v10_15),
+        .iOS(.v13)
+    ],
     products: [
         .executable(name: "ClanglerClient", targets: ["ClanglerClient"]),
         .library(name: "Clangler", targets: ["Clangler"])

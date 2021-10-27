@@ -1,5 +1,4 @@
 public enum TokenType {
-    case identifier
     case dot // '.'
     case comma // ','
     case bang // '!'
@@ -10,7 +9,8 @@ public enum TokenType {
     case trailingBracket // ']'
     case stringLiteral
     case integerLiteral
-    case comment
+    case identifier
+    case endOfFile
 
     // Keywords
 
