@@ -11,6 +11,7 @@ public enum TokenType {
     case integerLiteral
     case identifier
     case endOfFile
+    case lexerError
 
     // Keywords
 

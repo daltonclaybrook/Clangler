@@ -58,18 +58,25 @@ public final class Lexer: LexerType {
                 } else if match(next: "*") {
                     scanCommentBlock()
                 } else {
-                    // Todo: handle this error
-                    break
+                    // Unrecognized character. Emit error.
+                    makeError(lexeme: next)
                 }
             default:
-                if next.isNumber {
-
+                if next.isWhitespace {
+                    // Ignore whitespace
+                    break
+                } else if next.isNumber {
+                    scanIntegerLiteral()
                 } else if next.isIdentifierNonDigit {
-
+                    scanIdentifier()
+                } else {
+                    // Unrecognized character. Emit error.
+                    makeError(lexeme: next)
                 }
             }
         }
 
+        makeToken(type: .endOfFile, lexeme: "")
         return scannedTokens
     }
 
@@ -85,6 +92,11 @@ public final class Lexer: LexerType {
                 lexeme: lexeme.description
             )
         )
+    }
+
+    /// Convenience function for emitting an error token
+    private func makeError<S>(lexeme: S) where S: CustomStringConvertible {
+        makeToken(type: .lexerError, lexeme: lexeme)
     }
 
     /// If the next scanned character matches the provided character, advance the scanner and return
@@ -182,6 +194,14 @@ public final class Lexer: LexerType {
                 continue
             }
         }
+    }
+
+    private func scanIntegerLiteral() {
+        // Todo: implement
+    }
+
+    private func scanIdentifier() {
+        // Todo: implement
     }
 }
 
