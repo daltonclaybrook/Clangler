@@ -8,6 +8,7 @@ public final class Lexer: LexerType {
     public enum Error: Swift.Error {
         case failedToScanNextCharacter
         case unterminatedString
+        case failedToMakeIntegerFromLexeme(String)
     }
 
     private let fileContents: String
@@ -66,9 +67,9 @@ public final class Lexer: LexerType {
                     // Ignore whitespace
                     break
                 } else if next.isNumber {
-                    scanIntegerLiteral()
+                    try scanIntegerLiteral(startWith: next)
                 } else if next.isIdentifierNonDigit {
-                    scanIdentifier()
+                    try scanIdentifierOrKeyword(startWith: next)
                 } else {
                     // Unrecognized character. Emit error.
                     makeError(lexeme: next)
@@ -155,11 +156,13 @@ public final class Lexer: LexerType {
             case "\"":
                 // Lexeme is terminated with the closing quote. return.
                 return lexeme
-            case "\n":
-                // Line-breaks in strings are not allowed
-                throw Error.unterminatedString
             default:
-                continue
+                if next.isNewline {
+                    // Line-breaks in strings are not allowed
+                    throw Error.unterminatedString
+                } else {
+                    continue
+                }
             }
         }
 
@@ -196,12 +199,44 @@ public final class Lexer: LexerType {
         }
     }
 
-    private func scanIntegerLiteral() {
-        // Todo: implement
+    private func scanIntegerLiteral(startWith: Character) throws {
+        var integerString = String(startWith)
+        while !scanner.isAtEnd {
+            guard let next = advanceScanner() else {
+                throw Error.failedToScanNextCharacter
+            }
+
+            if next.isNumber {
+                integerString.append(next)
+            } else {
+                // break out of the loop and make the token
+                break
+            }
+        }
+
+        guard Int(integerString) != nil else {
+            throw Error.failedToMakeIntegerFromLexeme(integerString)
+        }
+
+        makeToken(type: .integerLiteral, lexeme: integerString)
     }
 
-    private func scanIdentifier() {
-        // Todo: implement
+    private func scanIdentifierOrKeyword(startWith: Character) throws {
+        var lexeme = String(startWith)
+        while !scanner.isAtEnd {
+            guard let next = advanceScanner() else {
+                throw Error.failedToScanNextCharacter
+            }
+
+            if next.isIdentifierNonDigit || next.isNumber {
+                lexeme.append(next)
+            } else {
+                break
+            }
+        }
+
+        let tokenType = TokenType.tokenTypesForKeyword[lexeme] ?? .identifier
+        makeToken(type: tokenType, lexeme: lexeme)
     }
 }
 
