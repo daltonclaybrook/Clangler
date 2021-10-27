@@ -11,32 +11,24 @@ public final class Lexer: LexerType {
     }
 
     private let fileContents: String
+    private let scanner: Scanner
+
+    private var currentLine = 1
+    private var currentColumn = 1
+    private var scannedTokens: [Token] = []
 
     public init(fileContents: String) {
         self.fileContents = fileContents
+        self.scanner = Scanner(string: fileContents)
     }
 
     public convenience init(fileURL: URL) throws {
         self.init(fileContents: try String(contentsOf: fileURL))
     }
 
-    public func scanTokens() throws -> [Token] {
-        let scanner = Scanner(string: fileContents)
-
-        var currentLine = 1
-        var currentColumn = 1
-        var tokens: [Token] = []
-
-        // Convenience for making the token
-        func makeToken<S>(type: TokenType, lexeme: S) where S: CustomStringConvertible {
-            tokens.append(
-                Token(type: type, line: currentLine, column: currentColumn, lexeme: lexeme.description)
-            )
-        }
-
+    public func scanAllTokens() throws -> [Token] {
         while !scanner.isAtEnd {
-            defer { currentColumn += 1}
-            guard let next = scanner.scanCharacter() else {
+            guard let next = advanceScanner() else {
                 throw Error.failedToScanNextCharacter
             }
 
@@ -58,30 +50,85 @@ public final class Lexer: LexerType {
             case "]":
                 makeToken(type: .trailingBracket, lexeme: next)
             case "\"":
-                let lexeme = try scanStringLiteral(scanner: scanner, currentColumn: &currentColumn)
+                let lexeme = try scanStringLiteral(scanner: scanner)
                 makeToken(type: .stringLiteral, lexeme: lexeme)
+            case "/":
+                if match(next: "/") {
+                    scanCommentLine()
+                } else if match(next: "*") {
+                    scanCommentBlock()
+                } else {
+                    // Todo: handle this error
+                    break
+                }
             default:
-                fatalError()
+                if next.isNumber {
+
+                } else if next.isIdentifierNonDigit {
+
+                }
             }
         }
 
-        return tokens
+        return scannedTokens
     }
 
     // MARK: - Private helpers
 
-    private func scanStringLiteral(scanner: Scanner, currentColumn: inout Int) throws -> String {
+    /// Convenience function for making a token using the current line and column
+    private func makeToken<S>(type: TokenType, lexeme: S) where S: CustomStringConvertible {
+        scannedTokens.append(
+            Token(
+                type: type,
+                line: currentLine,
+                column: currentColumn,
+                lexeme: lexeme.description
+            )
+        )
+    }
+
+    /// If the next scanned character matches the provided character, advance the scanner and return
+    /// `true`. Otherwise, do not advance the scanner and return `false`.
+    private func match(next: Character) -> Bool {
+        guard !scanner.isAtEnd, let scanned = scanner.scanCharacter()
+        else { return false }
+
+        if next == scanned {
+            updateLineAndColumn(for: scanned)
+            return true
+        } else {
+            // rewind scanner
+            scanner.currentIndex = scanner.string.index(before: scanner.currentIndex)
+            return false
+        }
+    }
+
+    private func advanceScanner() -> Character? {
+        guard let next = scanner.scanCharacter() else { return nil }
+        updateLineAndColumn(for: next)
+        return next
+    }
+
+    private func updateLineAndColumn(for next: Character) {
+        if next.isNewline {
+            currentLine += 1
+            currentColumn = 1
+        } else {
+            currentColumn += 1
+        }
+    }
+
+    private func scanStringLiteral(scanner: Scanner) throws -> String {
         // Start with the first quote since we've already scanned it
         var lexeme = "\""
         var isNextEscaped = false
 
         while !scanner.isAtEnd {
-            guard let next = scanner.scanCharacter() else {
+            guard let next = advanceScanner() else {
                 throw Error.failedToScanNextCharacter
             }
 
             lexeme.append(next)
-            currentColumn += 1
 
             if isNextEscaped {
                 // If this character is escaped, continue to next loop iteration
@@ -106,5 +153,41 @@ public final class Lexer: LexerType {
 
         // Should have returned from inside the loop upon encountering a closing quote
         throw Error.unterminatedString
+    }
+
+    private func scanCommentLine() {
+        while !scanner.isAtEnd {
+            guard let next = advanceScanner() else { return }
+            if next.isNewline {
+                return
+            }
+        }
+    }
+
+    private func scanCommentBlock() {
+        var depth = 1
+        while !scanner.isAtEnd {
+            guard let next = advanceScanner() else { return }
+            switch next {
+            case "*":
+                if match(next: "/") {
+                    depth -= 1
+                    if depth == 0 { return }
+                }
+            case "/":
+                if match(next: "*") {
+                    depth += 1
+                }
+            default:
+                continue
+            }
+        }
+    }
+}
+
+extension Character {
+    /// Identifiers can only start with `[a-zA-Z_]`
+    var isIdentifierNonDigit: Bool {
+        isLetter || self == "_"
     }
 }
