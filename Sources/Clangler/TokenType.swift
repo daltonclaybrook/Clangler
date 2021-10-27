@@ -1,5 +1,19 @@
 public enum TokenType {
-    // MARK: Keywords
+    case identifier
+    case dot // '.'
+    case comma // ','
+    case bang // '!'
+    case star // '*'
+    case leadingBrace // '{'
+    case trailingBrace // '}'
+    case leadingBracket // '['
+    case trailingBracket // ']'
+    case stringLiteral
+    case integerLiteral
+    case comment
+
+    // Keywords
+
     case keywordConfigMacros
     case keywordExportAs
     case keywordPrivate
@@ -18,7 +32,7 @@ public enum TokenType {
     case keywordExport
 }
 
-extension TokenType {
+public extension TokenType {
     /// A mapping of reserved keywords to their token type
     static let tokenTypesForKeyword: [String: TokenType] = [
         "config_macros": keywordConfigMacros,
