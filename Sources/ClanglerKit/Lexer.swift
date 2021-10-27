@@ -14,6 +14,4 @@ public final class Lexer: LexerType {
     public convenience init(fileURL: URL) throws {
         self.init(fileContents: try String(contentsOf: fileURL))
     }
-
-    func scanNextToken() -> 
 }
