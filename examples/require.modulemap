@@ -1,0 +1,13 @@
+module std {
+    // C standard library...
+    
+    module vector {
+        requires cplusplus
+        header "vector"
+    }
+
+    module type_traits {
+        requires cplusplus11
+        header "type_traits"
+    }
+}

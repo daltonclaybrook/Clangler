@@ -1,26 +1,22 @@
 import Foundation
 
 public protocol LexerType {
-
+    func scanAllTokens() throws -> [Token]
 }
 
 public final class Lexer: LexerType {
     public enum Error: Swift.Error {
-        case failedToScanNextCharacter
         case unterminatedString
         case failedToMakeIntegerFromLexeme(String)
     }
 
     private let fileContents: String
-    private let scanner: Scanner
-
-    private var currentLine = 1
-    private var currentColumn = 1
+    private var cursor: Cursor
     private var scannedTokens: [Token] = []
 
     public init(fileContents: String) {
         self.fileContents = fileContents
-        self.scanner = Scanner(string: fileContents)
+        self.cursor = Cursor(string: fileContents)
     }
 
     public convenience init(fileURL: URL) throws {
@@ -28,10 +24,8 @@ public final class Lexer: LexerType {
     }
 
     public func scanAllTokens() throws -> [Token] {
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else {
-                throw Error.failedToScanNextCharacter
-            }
+        while !cursor.isPastEnd {
+            let next = cursor.advance()
 
             switch next {
             case ".":
@@ -51,12 +45,12 @@ public final class Lexer: LexerType {
             case "]":
                 makeToken(type: .trailingBracket, lexeme: next)
             case "\"":
-                let lexeme = try scanStringLiteral(scanner: scanner)
+                let lexeme = try scanStringLiteral()
                 makeToken(type: .stringLiteral, lexeme: lexeme)
             case "/":
-                if match(next: "/") {
+                if cursor.match(next: "/") {
                     scanCommentLine()
-                } else if match(next: "*") {
+                } else if cursor.match(next: "*") {
                     scanCommentBlock()
                 } else {
                     // Unrecognized character. Emit error.
@@ -67,9 +61,9 @@ public final class Lexer: LexerType {
                     // Ignore whitespace
                     break
                 } else if next.isNumber {
-                    try scanIntegerLiteral(startWith: next)
+                    try scanIntegerLiteral()
                 } else if next.isIdentifierNonDigit {
-                    try scanIdentifierOrKeyword(startWith: next)
+                    try scanIdentifierOrKeyword()
                 } else {
                     // Unrecognized character. Emit error.
                     makeError(lexeme: next)
@@ -88,8 +82,8 @@ public final class Lexer: LexerType {
         scannedTokens.append(
             Token(
                 type: type,
-                line: currentLine,
-                column: currentColumn,
+                line: cursor.currentLine,
+                column: cursor.currentColumn,
                 lexeme: lexeme.description
             )
         )
@@ -100,47 +94,13 @@ public final class Lexer: LexerType {
         makeToken(type: .lexerError, lexeme: lexeme)
     }
 
-    /// If the next scanned character matches the provided character, advance the scanner and return
-    /// `true`. Otherwise, do not advance the scanner and return `false`.
-    private func match(next: Character) -> Bool {
-        guard !scanner.isAtEnd, let scanned = scanner.scanCharacter()
-        else { return false }
-
-        if next == scanned {
-            updateLineAndColumn(for: scanned)
-            return true
-        } else {
-            // rewind scanner
-            scanner.currentIndex = scanner.string.index(before: scanner.currentIndex)
-            return false
-        }
-    }
-
-    private func advanceScanner() -> Character? {
-        guard let next = scanner.scanCharacter() else { return nil }
-        updateLineAndColumn(for: next)
-        return next
-    }
-
-    private func updateLineAndColumn(for next: Character) {
-        if next.isNewline {
-            currentLine += 1
-            currentColumn = 1
-        } else {
-            currentColumn += 1
-        }
-    }
-
-    private func scanStringLiteral(scanner: Scanner) throws -> String {
+    private func scanStringLiteral() throws -> String {
         // Start with the first quote since we've already scanned it
         var lexeme = "\""
         var isNextEscaped = false
 
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else {
-                throw Error.failedToScanNextCharacter
-            }
-
+        while !cursor.isPastEnd {
+            let next = cursor.advance()
             lexeme.append(next)
 
             if isNextEscaped {
@@ -171,9 +131,8 @@ public final class Lexer: LexerType {
     }
 
     private func scanCommentLine() {
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else { return }
-            if next.isNewline {
+        while !cursor.isPastEnd {
+            if cursor.advance().isNewline {
                 return
             }
         }
@@ -181,16 +140,16 @@ public final class Lexer: LexerType {
 
     private func scanCommentBlock() {
         var depth = 1
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else { return }
+        while !cursor.isPastEnd {
+            let next = cursor.advance()
             switch next {
             case "*":
-                if match(next: "/") {
+                if cursor.match(next: "/") {
                     depth -= 1
                     if depth == 0 { return }
                 }
             case "/":
-                if match(next: "*") {
+                if cursor.match(next: "*") {
                     depth += 1
                 }
             default:
@@ -199,19 +158,10 @@ public final class Lexer: LexerType {
         }
     }
 
-    private func scanIntegerLiteral(startWith: Character) throws {
-        var integerString = String(startWith)
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else {
-                throw Error.failedToScanNextCharacter
-            }
-
-            if next.isNumber {
-                integerString.append(next)
-            } else {
-                // break out of the loop and make the token
-                break
-            }
+    private func scanIntegerLiteral() throws {
+        var integerString = String(cursor.current)
+        while !cursor.isPastEnd && cursor.peek().isNumber {
+            integerString.append(cursor.advance())
         }
 
         guard Int(integerString) != nil else {
@@ -221,15 +171,12 @@ public final class Lexer: LexerType {
         makeToken(type: .integerLiteral, lexeme: integerString)
     }
 
-    private func scanIdentifierOrKeyword(startWith: Character) throws {
-        var lexeme = String(startWith)
-        while !scanner.isAtEnd {
-            guard let next = advanceScanner() else {
-                throw Error.failedToScanNextCharacter
-            }
-
+    private func scanIdentifierOrKeyword() throws {
+        var lexeme = String(cursor.current)
+        while !cursor.isPastEnd {
+            let next = cursor.peek()
             if next.isIdentifierNonDigit || next.isNumber {
-                lexeme.append(next)
+                lexeme.append(cursor.advance())
             } else {
                 break
             }

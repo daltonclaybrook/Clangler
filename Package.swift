@@ -18,6 +18,7 @@ let package = Package(
     targets: [
         .target(name: "ClanglerClient", dependencies: [
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            "Clangler"
         ]),
         .target(name: "Clangler"),
         .testTarget(name: "ClanglerTests", dependencies: ["Clangler"]),

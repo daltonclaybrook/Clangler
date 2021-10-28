@@ -1,0 +1,4 @@
+module MyLogger {
+    umbrella header "MyLogger.h"
+    config_macros [exhaustive] NDEBUG, LOG_LEVEL
+}
