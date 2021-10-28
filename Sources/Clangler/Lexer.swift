@@ -44,8 +44,7 @@ public final class Lexer: LexerType {
             case "]":
                 makeToken(type: .trailingBracket, lexeme: next)
             case "\"":
-                let lexeme = try scanStringLiteral()
-                makeToken(type: .stringLiteral, lexeme: lexeme)
+                try scanStringLiteral()
             case "/":
                 if cursor.match(next: "/") {
                     scanCommentLine()
@@ -62,7 +61,7 @@ public final class Lexer: LexerType {
                 } else if next.isNumber {
                     try scanIntegerLiteral()
                 } else if next.isIdentifierNonDigit {
-                    try scanIdentifierOrKeyword()
+                    scanIdentifierOrKeyword()
                 } else {
                     // Unrecognized character. Emit error.
                     makeError(lexeme: next)
@@ -93,9 +92,9 @@ public final class Lexer: LexerType {
         makeToken(type: .lexerError, lexeme: lexeme)
     }
 
-    private func scanStringLiteral() throws -> String {
+    private func scanStringLiteral() throws {
         // Start with the first quote since we've already scanned it
-        var lexeme = "\""
+        var lexeme = String(cursor.previous)
         var isNextEscaped = false
 
         while !cursor.isAtEnd {
@@ -113,14 +112,13 @@ public final class Lexer: LexerType {
                 // If the scanned character is the escape character, record it
                 isNextEscaped = true
             case "\"":
-                // Lexeme is terminated with the closing quote. return.
-                return lexeme
+                // Lexeme is terminated with the closing quote. make the token.
+                makeToken(type: .stringLiteral, lexeme: lexeme)
+                return
             default:
                 if next.isNewline {
                     // Line-breaks in strings are not allowed
                     throw Error.unterminatedString
-                } else {
-                    continue
                 }
             }
         }
@@ -159,7 +157,7 @@ public final class Lexer: LexerType {
         makeToken(type: .integerLiteral, lexeme: integerString)
     }
 
-    private func scanIdentifierOrKeyword() throws {
+    private func scanIdentifierOrKeyword() {
         var lexeme = String(cursor.previous)
         while !cursor.isAtEnd {
             let next = cursor.peek()
