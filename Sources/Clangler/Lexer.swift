@@ -29,49 +29,7 @@ public final class Lexer: LexerType {
     public func scanAllTokens() throws -> [Token] {
         while !cursor.isAtEnd {
             startNewLexeme()
-            let current = cursor.advance()
-
-            switch current {
-            case ".":
-                makeToken(type: .dot, lexeme: current)
-            case ",":
-                makeToken(type: .comma, lexeme: current)
-            case "!":
-                makeToken(type: .bang, lexeme: current)
-            case "*":
-                makeToken(type: .star, lexeme: current)
-            case "{":
-                makeToken(type: .leadingBrace, lexeme: current)
-            case "}":
-                makeToken(type: .trailingBrace, lexeme: current)
-            case "[":
-                makeToken(type: .leadingBracket, lexeme: current)
-            case "]":
-                makeToken(type: .trailingBracket, lexeme: current)
-            case "\"":
-                try scanStringLiteral()
-            case "/":
-                if cursor.match(next: "/") {
-                    scanCommentLine()
-                } else if cursor.match(next: "*") {
-                    scanCommentBlock()
-                } else {
-                    // Unrecognized character. Emit error.
-                    makeError(lexeme: current)
-                }
-            default:
-                if current.isWhitespace {
-                    // Ignore whitespace
-                    break
-                } else if current.isNumber {
-                    try scanIntegerLiteral()
-                } else if current.isIdentifierNonDigit {
-                    scanIdentifierOrKeyword()
-                } else {
-                    // Unrecognized character. Emit error.
-                    makeError(lexeme: current)
-                }
-            }
+            try scanNextToken()
         }
 
         makeToken(type: .endOfFile, lexeme: "")
@@ -79,6 +37,51 @@ public final class Lexer: LexerType {
     }
 
     // MARK: - Private helpers
+
+    private func scanNextToken() throws {
+        let next = cursor.advance()
+        switch next {
+        case ".":
+            makeToken(type: .dot, lexeme: next)
+        case ",":
+            makeToken(type: .comma, lexeme: next)
+        case "!":
+            makeToken(type: .bang, lexeme: next)
+        case "*":
+            makeToken(type: .star, lexeme: next)
+        case "{":
+            makeToken(type: .leadingBrace, lexeme: next)
+        case "}":
+            makeToken(type: .trailingBrace, lexeme: next)
+        case "[":
+            makeToken(type: .leadingBracket, lexeme: next)
+        case "]":
+            makeToken(type: .trailingBracket, lexeme: next)
+        case "\"":
+            try scanStringLiteral()
+        case "/":
+            if cursor.match(next: "/") {
+                scanCommentLine()
+            } else if cursor.match(next: "*") {
+                scanCommentBlock()
+            } else {
+                // Unrecognized character. Emit error.
+                makeError(lexeme: next)
+            }
+        default:
+            if next.isWhitespace {
+                // Ignore whitespace
+                break
+            } else if next.isNumber {
+                try scanIntegerLiteral()
+            } else if next.isIdentifierNonDigit {
+                scanIdentifierOrKeyword()
+            } else {
+                // Unrecognized character. Emit error.
+                makeError(lexeme: next)
+            }
+        }
+    }
 
     private func startNewLexeme() {
         currentLexemeLine = cursor.currentLine
