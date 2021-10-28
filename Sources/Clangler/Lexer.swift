@@ -14,6 +14,9 @@ public final class Lexer: LexerType {
     private var cursor: Cursor
     private var scannedTokens: [Token] = []
 
+    private var currentLexemeLine = 0
+    private var currentLexemeColumn = 0
+
     public init(fileContents: String) {
         self.fileContents = fileContents
         self.cursor = Cursor(string: fileContents)
@@ -25,24 +28,26 @@ public final class Lexer: LexerType {
 
     public func scanAllTokens() throws -> [Token] {
         while !cursor.isAtEnd {
-            let next = cursor.advance()
-            switch next {
+            startNewLexeme()
+            let current = cursor.advance()
+
+            switch current {
             case ".":
-                makeToken(type: .dot, lexeme: next)
+                makeToken(type: .dot, lexeme: current)
             case ",":
-                makeToken(type: .comma, lexeme: next)
+                makeToken(type: .comma, lexeme: current)
             case "!":
-                makeToken(type: .bang, lexeme: next)
+                makeToken(type: .bang, lexeme: current)
             case "*":
-                makeToken(type: .star, lexeme: next)
+                makeToken(type: .star, lexeme: current)
             case "{":
-                makeToken(type: .leadingBrace, lexeme: next)
+                makeToken(type: .leadingBrace, lexeme: current)
             case "}":
-                makeToken(type: .trailingBrace, lexeme: next)
+                makeToken(type: .trailingBrace, lexeme: current)
             case "[":
-                makeToken(type: .leadingBracket, lexeme: next)
+                makeToken(type: .leadingBracket, lexeme: current)
             case "]":
-                makeToken(type: .trailingBracket, lexeme: next)
+                makeToken(type: .trailingBracket, lexeme: current)
             case "\"":
                 try scanStringLiteral()
             case "/":
@@ -52,19 +57,19 @@ public final class Lexer: LexerType {
                     scanCommentBlock()
                 } else {
                     // Unrecognized character. Emit error.
-                    makeError(lexeme: next)
+                    makeError(lexeme: current)
                 }
             default:
-                if next.isWhitespace {
+                if current.isWhitespace {
                     // Ignore whitespace
                     break
-                } else if next.isNumber {
+                } else if current.isNumber {
                     try scanIntegerLiteral()
-                } else if next.isIdentifierNonDigit {
+                } else if current.isIdentifierNonDigit {
                     scanIdentifierOrKeyword()
                 } else {
                     // Unrecognized character. Emit error.
-                    makeError(lexeme: next)
+                    makeError(lexeme: current)
                 }
             }
         }
@@ -75,13 +80,18 @@ public final class Lexer: LexerType {
 
     // MARK: - Private helpers
 
+    private func startNewLexeme() {
+        currentLexemeLine = cursor.currentLine
+        currentLexemeColumn = cursor.currentColumn
+    }
+
     /// Convenience function for making a token using the current line and column
     private func makeToken<S>(type: TokenType, lexeme: S) where S: CustomStringConvertible {
         scannedTokens.append(
             Token(
                 type: type,
-                line: cursor.currentLine,
-                column: cursor.currentColumn,
+                line: currentLexemeLine,
+                column: currentLexemeColumn,
                 lexeme: lexeme.description
             )
         )
