@@ -6,18 +6,13 @@ public struct Cursor {
     public private(set) var currentColumn = 1
 
     public var isAtEnd: Bool {
-        let lastIndex = string.index(before: string.endIndex)
-        return currentIndex >= lastIndex
-    }
-
-    public var isPastEnd: Bool {
         currentIndex >= string.endIndex
     }
 
-    /// The character at the current index
-    public var current: Character {
-        guard !isPastEnd else { return "\0" }
-        return string[currentIndex]
+    /// The previously scanned character
+    public var previous: Character {
+        guard currentIndex > string.startIndex else { return "\0" }
+        return string[string.index(before: currentIndex)]
     }
 
     public init(string: String) {
@@ -32,9 +27,11 @@ public struct Cursor {
     /// Advance the current index and return the next character
     @discardableResult
     public mutating func advance() -> Character {
-        guard !isPastEnd else {
+        guard !isAtEnd else {
             fatalError("Attempted to advance while already past the end of the string")
         }
+
+        let current = string[currentIndex]
         currentIndex = string.index(after: currentIndex)
         advanceLineAndColumn(for: current)
         return current
@@ -45,10 +42,10 @@ public struct Cursor {
     public mutating func match(next: Character) -> Bool {
         guard !isAtEnd else { return false }
 
-        let nextIndex = string.index(after: currentIndex)
-        guard string[nextIndex] == next else { return false }
+        let current = string[currentIndex]
+        guard current == next else { return false }
 
-        currentIndex = nextIndex
+        currentIndex = string.index(after: currentIndex)
         advanceLineAndColumn(for: current)
         return true
     }
@@ -56,9 +53,7 @@ public struct Cursor {
     /// Return the next character in the string without advancing the current index
     public func peek() -> Character {
         guard !isAtEnd else { return "\0" }
-
-        let nextIndex = string.index(after: currentIndex)
-        return string[nextIndex]
+        return string[currentIndex]
     }
 
     // MARK: - Private helpers

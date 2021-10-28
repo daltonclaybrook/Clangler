@@ -1,5 +1,9 @@
 module std {
     // C standard library...
+
+    /**
+     This is a block comment
+     */
     
     module vector {
         requires cplusplus

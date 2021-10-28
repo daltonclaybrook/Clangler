@@ -24,9 +24,8 @@ public final class Lexer: LexerType {
     }
 
     public func scanAllTokens() throws -> [Token] {
-        while !cursor.isPastEnd {
+        while !cursor.isAtEnd {
             let next = cursor.advance()
-
             switch next {
             case ".":
                 makeToken(type: .dot, lexeme: next)
@@ -99,7 +98,7 @@ public final class Lexer: LexerType {
         var lexeme = "\""
         var isNextEscaped = false
 
-        while !cursor.isPastEnd {
+        while !cursor.isAtEnd {
             let next = cursor.advance()
             lexeme.append(next)
 
@@ -131,7 +130,7 @@ public final class Lexer: LexerType {
     }
 
     private func scanCommentLine() {
-        while !cursor.isPastEnd {
+        while !cursor.isAtEnd {
             if cursor.advance().isNewline {
                 return
             }
@@ -139,28 +138,17 @@ public final class Lexer: LexerType {
     }
 
     private func scanCommentBlock() {
-        var depth = 1
-        while !cursor.isPastEnd {
+        while !cursor.isAtEnd {
             let next = cursor.advance()
-            switch next {
-            case "*":
-                if cursor.match(next: "/") {
-                    depth -= 1
-                    if depth == 0 { return }
-                }
-            case "/":
-                if cursor.match(next: "*") {
-                    depth += 1
-                }
-            default:
-                continue
+            if next == "*" && cursor.match(next: "/") {
+                return
             }
         }
     }
 
     private func scanIntegerLiteral() throws {
-        var integerString = String(cursor.current)
-        while !cursor.isPastEnd && cursor.peek().isNumber {
+        var integerString = String(cursor.previous)
+        while !cursor.isAtEnd && cursor.peek().isNumber {
             integerString.append(cursor.advance())
         }
 
@@ -172,8 +160,8 @@ public final class Lexer: LexerType {
     }
 
     private func scanIdentifierOrKeyword() throws {
-        var lexeme = String(cursor.current)
-        while !cursor.isPastEnd {
+        var lexeme = String(cursor.previous)
+        while !cursor.isAtEnd {
             let next = cursor.peek()
             if next.isIdentifierNonDigit || next.isNumber {
                 lexeme.append(cursor.advance())
