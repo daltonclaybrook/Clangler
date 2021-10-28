@@ -95,34 +95,23 @@ public final class Lexer: LexerType {
     private func scanStringLiteral() throws {
         // Start with the first quote since we've already scanned it
         var lexeme = String(cursor.previous)
-        var isNextEscaped = false
-
         while !cursor.isAtEnd {
             let next = cursor.advance()
+            guard !next.isNewline else { throw Error.unterminatedString }
+
             lexeme.append(next)
-
-            if isNextEscaped {
-                // If this character is escaped, continue to next loop iteration
-                isNextEscaped = false
-                continue
-            }
-
             switch next {
-            case "\\":
-                // If the scanned character is the escape character, record it
-                isNextEscaped = true
+            case "\\" where cursor.peek().isNewline:
+                // If the next character is an escaped newline, append it. This is allowed.
+                lexeme.append(cursor.advance())
             case "\"":
                 // Lexeme is terminated with the closing quote. make the token.
                 makeToken(type: .stringLiteral, lexeme: lexeme)
                 return
             default:
-                if next.isNewline {
-                    // Line-breaks in strings are not allowed
-                    throw Error.unterminatedString
-                }
+                break
             }
         }
-
         // Should have returned from inside the loop upon encountering a closing quote
         throw Error.unterminatedString
     }
