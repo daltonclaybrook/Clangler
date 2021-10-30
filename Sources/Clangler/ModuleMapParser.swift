@@ -106,27 +106,30 @@ public final class ModuleMapParser {
     }
 
     private func parseModuleMember() throws -> ModuleMember {
-        if currentToken.type == .keywordRequires {
-            return try parseRequiresDeclaration()
-        } else if canParseHeaderDeclaration() {
+        if canParseHeaderDeclaration() {
             return try parseHeaderDeclaration()
-        } else if currentToken.type == .keywordUmbrella {
-            return try parseUmbrellaDirectoryDeclaration()
         } else if canParseSubmoduleDeclaration() {
             return try parseSubmoduleDeclaration()
-        } else if currentToken.type == .keywordExport {
+        }
+
+        switch currentToken.type {
+        case .keywordRequires:
+            return try parseRequiresDeclaration()
+        case .keywordUmbrella:
+            return try parseUmbrellaDirectoryDeclaration()
+        case .keywordExport:
             return try parseExportDeclaration()
-        } else if currentToken.type == .keywordExportAs {
+        case .keywordExportAs:
             return try parseExportAsDeclaration()
-        } else if currentToken.type == .keywordUse {
+        case .keywordUse:
             return try parseUseDeclaration()
-        } else if currentToken.type == .keywordLink {
+        case .keywordLink:
             return try parseLinkDeclaration()
-        } else if currentToken.type == .keywordConfigMacros {
+        case .keywordConfigMacros:
             return try parseConfigMacrosDeclaration()
-        } else if currentToken.type == .keywordConflict {
+        case .keywordConflict:
             return try parseConflictDeclaration()
-        } else {
+        default:
             throw Error.unexpectedToken(currentToken, message: "Unable to parse next module member")
         }
     }
