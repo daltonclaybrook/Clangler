@@ -2,7 +2,9 @@ public struct ModuleMapFile {
     public let moduleDeclarations: [ModuleDeclarationType]
 }
 
-public protocol ModuleDeclarationType {}
+public protocol ModuleDeclarationType {
+    var moduleId: ModuleId { get }
+}
 
 public struct ModuleDeclaration: ModuleDeclarationType {
     public let explicit: Bool
