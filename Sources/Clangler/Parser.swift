@@ -1,6 +1,6 @@
 import Foundation
 
-public final class ModuleMapParser {
+public final class Parser {
     public enum Error: Swift.Error {
         case lexerProducedZeroTokens
         case expectedTokenType(TokenType, token: Token)
