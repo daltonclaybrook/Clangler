@@ -55,7 +55,7 @@ public struct UmbrellaDirectoryDeclaration: ModuleMember {
 }
 
 public enum SubmoduleDeclaration: ModuleMember {
-    case module(ModuleDeclaration)
+    case module(ModuleDeclarationType)
     case inferred(InferredSubmoduleDeclaration)
 }
 

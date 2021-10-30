@@ -40,7 +40,7 @@ public final class ModuleMapParser {
     private func parseModuleDeclaration() throws -> ModuleDeclarationType {
         switch currentToken.type {
         case .keywordExplicit, .keywordFramework, .keywordModule:
-            return try parseModule()
+            return try parseNormalModule()
         case .keywordExtern:
             return try parseExternModule()
         default:
@@ -48,7 +48,7 @@ public final class ModuleMapParser {
         }
     }
 
-    private func parseModule() throws -> ModuleDeclaration {
+    private func parseNormalModule() throws -> ModuleDeclaration {
         let explicit = match(type: .keywordExplicit)
         let framework = match(type: .keywordFramework)
         try consume(type: .keywordModule)
@@ -108,6 +108,8 @@ public final class ModuleMapParser {
             return try parseHeaderDeclaration()
         } else if currentToken.type == .keywordUmbrella {
             return try parseUmbrellaDirectoryDeclaration()
+        } else if canParseSubmoduleDeclaration() {
+            return try parseSubmoduleDeclaration()
         } else {
             fatalError("implement remaining...")
         }
@@ -140,7 +142,7 @@ public final class ModuleMapParser {
              .keywordHeader,
              .keywordExclude:
             return true
-        case .keywordUmbrella where peekNext()?.type == .keywordHeader:
+        case .keywordUmbrella where peek(count: 1)?.type == .keywordHeader:
             // If the current token is 'umbrella', it will be either an umbrella header
             // declaration or an umbrella directory declaration, so we check the next token.
             return true
@@ -194,6 +196,38 @@ public final class ModuleMapParser {
         )
     }
 
+    private func canParseSubmoduleDeclaration() -> Bool {
+        if willMatch(.keywordExplicit, .keywordFramework, .keywordModule)
+            || willMatch(.keywordExplicit, .keywordModule)
+            || willMatch(.keywordFramework, .keywordModule)
+            || willMatch(.keywordExtern, .keywordModule)
+            || willMatch(.keywordModule) {
+            return true
+        } else {
+            return false
+        }
+    }
+
+    private func parseSubmoduleDeclaration() throws -> SubmoduleDeclaration {
+        // First, find the offset of the next module keyword
+        var moduleOffset = 0
+        while peek(count: moduleOffset)?.type != .keywordModule {
+            moduleOffset += 1
+        }
+
+        // Check if the token right after the module keyword is a star. If so, this is an
+        // inferred submodule declaration. Otherwise, it is a regular module declaration.
+        if peek(count: moduleOffset + 1)?.type == .star {
+            return .inferred(try parseInferredSubmoduleDeclaration())
+        } else {
+            return .module(try parseModuleDeclaration())
+        }
+    }
+
+    private func parseInferredSubmoduleDeclaration() throws -> InferredSubmoduleDeclaration {
+        fatalError("implement")
+    }
+
     // MARK: - Helper functions
 
     private var currentToken: Token {
@@ -211,9 +245,21 @@ public final class ModuleMapParser {
         currentTokenIndex >= tokens.count
     }
 
-    private func peekNext() -> Token? {
-        guard currentTokenIndex < tokens.count - 1 else { return nil }
-        return tokens[currentTokenIndex + 1]
+    /// Return the token that is `count` ahead of the current token, or nil if no such token exists
+    private func peek(count: Int = 0) -> Token? {
+        guard currentTokenIndex < tokens.count - count else { return nil }
+        return tokens[currentTokenIndex + count]
+    }
+
+    /// Returns true if the next several tokens will match the provided sequence of token types. This function
+    /// does not advance the current token index.
+    private func willMatch(_ types: TokenType...) -> Bool {
+        for (type, offset) in zip(types, 0...) {
+            let index = currentTokenIndex + offset
+            guard index < tokens.count else { return false }
+            guard tokens[index].type == type else { return false }
+        }
+        return true
     }
 
     @discardableResult
