@@ -112,6 +112,8 @@ public final class ModuleMapParser {
             return try parseSubmoduleDeclaration()
         } else if currentToken.type == .keywordExport {
             return try parseExportDeclaration()
+        } else if currentToken.type == .keywordExportAs {
+            return try parseExportAsDeclaration()
         } else {
             fatalError("implement remaining...")
         }
@@ -276,6 +278,11 @@ public final class ModuleMapParser {
         } else {
             throw Error.unexpectedToken(currentToken, message: "Expected to match a wildcard module id component")
         }
+    }
+
+    private func parseExportAsDeclaration() throws -> ExportAsDeclaration {
+        try consume(type: .keywordExportAs)
+        return ExportAsDeclaration(identifier: try consume(type: .identifier))
     }
 
     // MARK: - Helper functions
