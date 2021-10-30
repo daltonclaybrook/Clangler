@@ -110,6 +110,8 @@ public final class ModuleMapParser {
             return try parseUmbrellaDirectoryDeclaration()
         } else if canParseSubmoduleDeclaration() {
             return try parseSubmoduleDeclaration()
+        } else if currentToken.type == .keywordExport {
+            return try parseExportDeclaration()
         } else {
             fatalError("implement remaining...")
         }
@@ -225,7 +227,55 @@ public final class ModuleMapParser {
     }
 
     private func parseInferredSubmoduleDeclaration() throws -> InferredSubmoduleDeclaration {
-        fatalError("implement")
+        let explicit = match(type: .keywordExplicit)
+        let framework = match(type: .keywordFramework)
+        try consume(type: .keywordModule)
+        try consume(type: .star)
+
+        return InferredSubmoduleDeclaration(
+            explicit: explicit,
+            framework: framework,
+            attributes: try parseAttributes(),
+            members: try parseInferredSubmoduleMemberBlock()
+        )
+    }
+
+    private func parseInferredSubmoduleMemberBlock() throws -> [InferredSubmoduleMember] {
+        try consume(type: .leadingBrace)
+        var members: [InferredSubmoduleMember] = []
+        while !isAtEnd && !match(type: .trailingBrace) {
+            try consume(type: .keywordExport)
+            try consume(type: .star)
+            members.append(InferredSubmoduleMember())
+        }
+        return members
+    }
+
+    private func parseExportDeclaration() throws -> ExportDeclaration {
+        try consume(type: .keywordExport)
+        return ExportDeclaration(moduleId: try parseWildcardModuleId())
+    }
+
+    private func parseWildcardModuleId() throws -> WildcardModuleId {
+        WildcardModuleId(
+            dotSeparatedIdentifiers: try parseWildcardModuleIdComponents(),
+            trailingStar: match(type: .star)
+        )
+    }
+
+    private func parseWildcardModuleIdComponents() throws -> [Token] {
+        if willMatch(.identifier, .dot) {
+            let components = [try consume(type: .identifier)]
+            try consume(type: .dot)
+            return try components + parseWildcardModuleIdComponents()
+        } else if willMatch(.identifier) {
+            return [try consume(type: .identifier)]
+        } else if willMatch(.star) {
+            // parsed by caller
+            return []
+        } else {
+            throw Error.unexpectedToken(currentToken, message: "Expected to match a wildcard module id component")
+        }
     }
 
     // MARK: - Helper functions
