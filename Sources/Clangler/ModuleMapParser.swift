@@ -114,8 +114,16 @@ public final class ModuleMapParser {
             return try parseExportDeclaration()
         } else if currentToken.type == .keywordExportAs {
             return try parseExportAsDeclaration()
+        } else if currentToken.type == .keywordUse {
+            return try parseUseDeclaration()
+        } else if currentToken.type == .keywordLink {
+            return try parseLinkDeclaration()
+        } else if currentToken.type == .keywordConfigMacros {
+            return try parseConfigMacrosDeclaration()
+        } else if currentToken.type == .keywordConflict {
+            return try parseConflictDeclaration()
         } else {
-            fatalError("implement remaining...")
+            throw Error.unexpectedToken(currentToken, message: "Unable to parse next module member")
         }
     }
 
@@ -283,6 +291,48 @@ public final class ModuleMapParser {
     private func parseExportAsDeclaration() throws -> ExportAsDeclaration {
         try consume(type: .keywordExportAs)
         return ExportAsDeclaration(identifier: try consume(type: .identifier))
+    }
+
+    private func parseUseDeclaration() throws -> UseDeclaration {
+        try consume(type: .keywordUse)
+        return UseDeclaration(moduleID: try parseModuleId())
+    }
+
+    private func parseLinkDeclaration() throws -> LinkDeclaration {
+        try consume(type: .keywordLink)
+        return LinkDeclaration(
+            framework: match(type: .keywordFramework),
+            libraryOrFrameworkName: try consume(type: .stringLiteral)
+        )
+    }
+
+    private func parseConfigMacrosDeclaration() throws -> ConfigMacrosDeclaration {
+        try consume(type: .keywordConfigMacros)
+        return ConfigMacrosDeclaration(
+            attributes: try parseAttributes(),
+            commaSeparatedMacroNames: try parseConfigMacroList()
+        )
+    }
+
+    private func parseConfigMacroList() throws -> [Token] {
+        guard willMatch(.identifier) else { return [] }
+
+        var identifiers = [try consume(type: .identifier)]
+        while !isAtEnd && match(type: .comma) {
+            identifiers.append(try consume(type: .identifier))
+        }
+        return identifiers
+    }
+
+    private func parseConflictDeclaration() throws -> ConflictDeclaration {
+        try consume(type: .keywordConflict)
+        let moduleId = try parseModuleId()
+        try consume(type: .comma)
+
+        return ConflictDeclaration(
+            moduleId: moduleId,
+            diagnosticMessage: try consume(type: .stringLiteral)
+        )
     }
 
     // MARK: - Helper functions
