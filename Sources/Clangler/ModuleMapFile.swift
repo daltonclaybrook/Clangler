@@ -1,8 +1,10 @@
 public struct ModuleMapFile {
-    public let moduleDeclarations: [ModuleDeclaration]
+    public let moduleDeclarations: [ModuleDeclarationType]
 }
 
-public struct ModuleDeclaration {
+public protocol ModuleDeclarationType {}
+
+public struct ModuleDeclaration: ModuleDeclarationType {
     public let explicit: Bool
     public let framework: Bool
     public let moduleId: ModuleId
@@ -10,7 +12,7 @@ public struct ModuleDeclaration {
     public let members: [ModuleMember]
 }
 
-public struct ExternModuleDeclaration {
+public struct ExternModuleDeclaration: ModuleDeclarationType {
     public let moduleId: ModuleId
     public let filePath: Token
 }
