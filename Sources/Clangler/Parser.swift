@@ -8,16 +8,18 @@ public final class Parser {
         case unexpectedToken(Token, message: String)
     }
 
-    private let fileURL: URL
     private var currentTokenIndex: Int = 0
     private var tokens: [Token] = []
 
-    public init(fileURL: URL) {
-        self.fileURL = fileURL
+    public init() {}
+
+    public func parseFile(at url: URL) throws -> ModuleMapFile {
+        let fileContents = try String(contentsOf: url)
+        return try parse(fileContents: fileContents)
     }
 
-    public func parse() throws -> ModuleMapFile {
-        let lexer = try Lexer(fileURL: fileURL)
+    public func parse(fileContents: String) throws -> ModuleMapFile {
+        let lexer = Lexer(fileContents: fileContents)
         currentTokenIndex = 0
         tokens = try lexer.scanAllTokens()
         guard !tokens.isEmpty else {
