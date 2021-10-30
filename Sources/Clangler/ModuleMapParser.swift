@@ -2,6 +2,7 @@ import Foundation
 
 public final class ModuleMapParser {
     public enum Error: Swift.Error {
+        case lexerProducedZeroTokens
         case expectedTokenType(TokenType, token: Token)
         case expectedModuleDeclaration(Token?)
         case unexpectedToken(Token, message: String)
@@ -19,6 +20,9 @@ public final class ModuleMapParser {
         let lexer = try Lexer(fileURL: fileURL)
         currentTokenIndex = 0
         tokens = try lexer.scanAllTokens()
+        guard !tokens.isEmpty else {
+            throw Error.lexerProducedZeroTokens
+        }
         return parseModuleMapFile()
     }
 
@@ -26,7 +30,7 @@ public final class ModuleMapParser {
 
     private func parseModuleMapFile() -> ModuleMapFile {
         var declarations: [ModuleDeclarationType] = []
-        while currentTokenIndex < tokens.count {
+        while !isAtEnd {
             do {
                 declarations.append(try parseModuleDeclaration())
             } catch let error {
@@ -95,7 +99,7 @@ public final class ModuleMapParser {
     private func parseModuleMembersBlock() throws -> [ModuleMember] {
         try consume(type: .leadingBrace)
         var members: [ModuleMember] = []
-        while !isAtEnd && currentToken.type != .trailingBrace {
+        while !isAtEnd && !match(type: .trailingBrace) {
             members.append(try parseModuleMember())
         }
         return members
@@ -349,7 +353,8 @@ public final class ModuleMapParser {
     }
 
     private var isAtEnd: Bool {
-        currentTokenIndex >= tokens.count
+        currentTokenIndex >= tokens.count ||
+            tokens[currentTokenIndex].type == .endOfFile
     }
 
     /// Return the token that is `count` ahead of the current token, or nil if no such token exists
