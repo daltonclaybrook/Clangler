@@ -81,7 +81,7 @@ public final class ModuleMapParser {
 
     private func parseModuleId() throws -> ModuleId {
         var identifiers = [try consume(type: .identifier)]
-        while currentToken.type == .dot {
+        while match(type: .dot) {
             identifiers.append(try consume(type: .identifier))
         }
         return ModuleId(dotSeparatedIdentifiers: identifiers)
@@ -225,7 +225,8 @@ public final class ModuleMapParser {
     }
 
     private func parseSubmoduleDeclaration() throws -> SubmoduleDeclaration {
-        // First, find the offset of the next module keyword
+        // First, find the offset of the next module keyword. We know it exists because
+        // we've already called `canParseSubmoduleDeclaration()`. At most, it's two tokens away.
         var moduleOffset = 0
         while peek(count: moduleOffset)?.type != .keywordModule {
             moduleOffset += 1
@@ -393,23 +394,6 @@ public final class ModuleMapParser {
         return previousToken
     }
 
-    private func advance() {
-        guard !isAtEnd else { return }
-        currentTokenIndex += 1
-    }
-
-    @discardableResult
-    private func consumeEither(_ first: TokenType, _ second: TokenType) throws -> Token {
-        switch currentToken.type {
-        case first:
-            return try consume(type: first)
-        case second:
-            return try consume(type: second)
-        default:
-            throw Error.expectedTokenType(first, token: currentToken)
-        }
-    }
-
     /// Advance up to the start of the next module declaration
     private func synchronize() {
         while !isAtEnd {
@@ -417,7 +401,7 @@ public final class ModuleMapParser {
             case .keywordExplicit, .keywordFramework, .keywordModule, .keywordExtern:
                 return
             default:
-                advance()
+                currentTokenIndex += 1
             }
         }
     }

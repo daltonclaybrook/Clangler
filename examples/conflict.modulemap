@@ -1,5 +1,5 @@
 module Conflicts {
-  explicit module A {
+  explicit module A.Foo.Bar {
     header "conflict_a.h"
     conflict B, "we just \
     don't like B"
