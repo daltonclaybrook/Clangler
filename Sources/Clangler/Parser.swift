@@ -3,8 +3,6 @@ import Foundation
 public final class Parser {
     public enum Error: Swift.Error {
         case lexerProducedZeroTokens
-        case expectedTokenType(TokenType, token: Token)
-        case expectedModuleDeclaration(Token?)
         case unexpectedToken(Token, message: String)
     }
 
@@ -45,46 +43,41 @@ public final class Parser {
 
     private func parseModuleDeclaration() throws -> ModuleDeclarationType {
         switch currentToken.type {
-        case .keywordExplicit, .keywordFramework, .keywordModule:
-            return try parseNormalModule()
         case .keywordExtern:
             return try parseExternModule()
         default:
-            throw Error.expectedModuleDeclaration(currentToken)
+            return try parseNormalModule()
         }
     }
 
     private func parseNormalModule() throws -> ModuleDeclaration {
         let explicit = match(type: .keywordExplicit)
         let framework = match(type: .keywordFramework)
-        try consume(type: .keywordModule)
-        let moduleId = try parseModuleId()
-        let attributes = try parseAttributes()
-        let members = try parseModuleMembersBlock()
+        try consume(type: .keywordModule, message: "Expected 'module' declaration")
 
         return ModuleDeclaration(
             explicit: explicit,
             framework: framework,
-            moduleId: moduleId,
-            attributes: attributes,
-            members: members
+            moduleId: try parseModuleId(),
+            attributes: try parseAttributes(),
+            members: try parseModuleMembersBlock()
         )
     }
 
     private func parseExternModule() throws -> ExternModuleDeclaration {
-        try consume(type: .keywordExtern)
-        try consume(type: .keywordModule)
+        try consume(type: .keywordExtern, message: "Expected 'extern' keyword")
+        try consume(type: .keywordModule, message: "Expected 'module' keyword")
 
         return ExternModuleDeclaration(
             moduleId: try parseModuleId(),
-            filePath: try consume(type: .stringLiteral)
+            filePath: try consume(type: .stringLiteral, message: "Expected file path string literal")
         )
     }
 
     private func parseModuleId() throws -> ModuleId {
-        var identifiers = [try consume(type: .identifier)]
+        var identifiers = [try consume(type: .identifier, message: "Expected module identifier")]
         while match(type: .dot) {
-            identifiers.append(try consume(type: .identifier))
+            identifiers.append(try consume(type: .identifier, message: "Expected module identifier component"))
         }
         return ModuleId(dotSeparatedIdentifiers: identifiers)
     }
@@ -92,18 +85,19 @@ public final class Parser {
     private func parseAttributes() throws -> [Token] {
         var attributes: [Token] = []
         while !isAtEnd && match(type: .leadingBracket) {
-            attributes.append(try consume(type: .identifier))
-            try consume(type: .trailingBracket)
+            attributes.append(try consume(type: .identifier, message: "Expected attribute identifier"))
+            try consume(type: .trailingBracket, message: "Expected ']' after attribute")
         }
         return attributes
     }
 
     private func parseModuleMembersBlock() throws -> [ModuleMember] {
-        try consume(type: .leadingBrace)
+        try consume(type: .leadingBrace, message: "Expected '{' after module declaration")
         var members: [ModuleMember] = []
-        while !isAtEnd && !match(type: .trailingBrace) {
+        while !isAtEnd && currentToken.type != .trailingBrace {
             members.append(try parseModuleMember())
         }
+        try consume(type: .trailingBrace, message: "Expected '}' after module members block")
         return members
     }
 
@@ -132,12 +126,12 @@ public final class Parser {
         case .keywordConflict:
             return try parseConflictDeclaration()
         default:
-            throw Error.unexpectedToken(currentToken, message: "Unable to parse next module member")
+            throw Error.unexpectedToken(currentToken, message: "Expected a module member declaration")
         }
     }
 
     private func parseRequiresDeclaration() throws -> RequiresDeclaration {
-        try consume(type: .keywordRequires)
+        try consume(type: .keywordRequires, message: "Expected 'requires' keyword")
         return RequiresDeclaration(features: try parseFeatureList())
     }
 
@@ -152,7 +146,7 @@ public final class Parser {
     private func parseFeature() throws -> Feature {
         Feature(
             incompatible: match(type: .bang),
-            identifier: try consume(type: .identifier)
+            identifier: try consume(type: .identifier, message: "Expected feature identifier")
         )
     }
 
@@ -174,10 +168,10 @@ public final class Parser {
 
     private func parseHeaderDeclaration() throws -> HeaderDeclaration {
         let kind = try parseHeaderKind()
-        try consume(type: .keywordHeader)
+        try consume(type: .keywordHeader, message: "Expected 'header' declaration")
         return HeaderDeclaration(
             kind: kind,
-            filePath: try consume(type: .stringLiteral),
+            filePath: try consume(type: .stringLiteral, message: "Expected file path string literal"),
             headerAttributes: try parseHeaderAttributes()
         )
     }
@@ -205,15 +199,15 @@ public final class Parser {
 
     private func parseHeaderAttribute() throws -> HeaderAttribute {
         HeaderAttribute(
-            key: try consume(type: .identifier),
-            value: try consume(type: .integerLiteral)
+            key: try consume(type: .identifier, message: "Expected header attribute key identifier"),
+            value: try consume(type: .integerLiteral, message: "Expected header attribute value integer")
         )
     }
 
     private func parseUmbrellaDirectoryDeclaration() throws -> UmbrellaDirectoryDeclaration {
-        try consume(type: .keywordUmbrella)
+        try consume(type: .keywordUmbrella, message: "Expected 'umbrella' keyword")
         return UmbrellaDirectoryDeclaration(
-            filePath: try consume(type: .stringLiteral)
+            filePath: try consume(type: .stringLiteral, message: "Expected file path string literal")
         )
     }
 
@@ -249,8 +243,8 @@ public final class Parser {
     private func parseInferredSubmoduleDeclaration() throws -> InferredSubmoduleDeclaration {
         let explicit = match(type: .keywordExplicit)
         let framework = match(type: .keywordFramework)
-        try consume(type: .keywordModule)
-        try consume(type: .star)
+        try consume(type: .keywordModule, message: "Expected 'module' declaration")
+        try consume(type: .star, message: "Expected '*' symbol")
 
         return InferredSubmoduleDeclaration(
             explicit: explicit,
@@ -261,18 +255,19 @@ public final class Parser {
     }
 
     private func parseInferredSubmoduleMemberBlock() throws -> [InferredSubmoduleMember] {
-        try consume(type: .leadingBrace)
+        try consume(type: .leadingBrace, message: "Expected '{' after module declaration")
         var members: [InferredSubmoduleMember] = []
-        while !isAtEnd && !match(type: .trailingBrace) {
-            try consume(type: .keywordExport)
-            try consume(type: .star)
+        while !isAtEnd && currentToken.type != .trailingBrace {
+            try consume(type: .keywordExport, message: "Expected 'export' keyword")
+            try consume(type: .star, message: "Expected '*' symbol")
             members.append(InferredSubmoduleMember())
         }
+        try consume(type: .trailingBrace, message: "Expected '}' after module members block")
         return members
     }
 
     private func parseExportDeclaration() throws -> ExportDeclaration {
-        try consume(type: .keywordExport)
+        try consume(type: .keywordExport, message: "Expected 'export' keyword")
         return ExportDeclaration(moduleId: try parseWildcardModuleId())
     }
 
@@ -285,39 +280,41 @@ public final class Parser {
 
     private func parseWildcardModuleIdComponents() throws -> [Token] {
         if willMatch(.identifier, .dot) {
-            let components = [try consume(type: .identifier)]
-            try consume(type: .dot)
+            let components = [try consume(type: .identifier, message: "Expected identifier")]
+            try consume(type: .dot, message: "Expected '.' symbol")
             return try components + parseWildcardModuleIdComponents()
         } else if willMatch(.identifier) {
-            return [try consume(type: .identifier)]
+            return [try consume(type: .identifier, message: "Expected identifier")]
         } else if willMatch(.star) {
             // parsed by caller
             return []
         } else {
-            throw Error.unexpectedToken(currentToken, message: "Expected to match a wildcard module id component")
+            throw Error.unexpectedToken(currentToken, message: "Expected a wildcard module identifier component")
         }
     }
 
     private func parseExportAsDeclaration() throws -> ExportAsDeclaration {
-        try consume(type: .keywordExportAs)
-        return ExportAsDeclaration(identifier: try consume(type: .identifier))
+        try consume(type: .keywordExportAs, message: "Expected 'export_as' keyword")
+        return ExportAsDeclaration(
+            identifier: try consume(type: .identifier, message: "Expected module name identifier")
+        )
     }
 
     private func parseUseDeclaration() throws -> UseDeclaration {
-        try consume(type: .keywordUse)
+        try consume(type: .keywordUse, message: "Expected 'use' keyword")
         return UseDeclaration(moduleID: try parseModuleId())
     }
 
     private func parseLinkDeclaration() throws -> LinkDeclaration {
-        try consume(type: .keywordLink)
+        try consume(type: .keywordLink, message: "Expected 'link' keyword")
         return LinkDeclaration(
             framework: match(type: .keywordFramework),
-            libraryOrFrameworkName: try consume(type: .stringLiteral)
+            libraryOrFrameworkName: try consume(type: .stringLiteral, message: "Expected library or framework name string literal")
         )
     }
 
     private func parseConfigMacrosDeclaration() throws -> ConfigMacrosDeclaration {
-        try consume(type: .keywordConfigMacros)
+        try consume(type: .keywordConfigMacros, message: "Expected 'config_macros' keyword")
         return ConfigMacrosDeclaration(
             attributes: try parseAttributes(),
             commaSeparatedMacroNames: try parseConfigMacroList()
@@ -327,21 +324,21 @@ public final class Parser {
     private func parseConfigMacroList() throws -> [Token] {
         guard willMatch(.identifier) else { return [] }
 
-        var identifiers = [try consume(type: .identifier)]
+        var identifiers = [try consume(type: .identifier, message: "Expected macro identifier")]
         while !isAtEnd && match(type: .comma) {
-            identifiers.append(try consume(type: .identifier))
+            identifiers.append(try consume(type: .identifier, message: "Expected macro identifier"))
         }
         return identifiers
     }
 
     private func parseConflictDeclaration() throws -> ConflictDeclaration {
-        try consume(type: .keywordConflict)
+        try consume(type: .keywordConflict, message: "Expected 'conflict' keyword")
         let moduleId = try parseModuleId()
-        try consume(type: .comma)
+        try consume(type: .comma, message: "Expected ',' symbol")
 
         return ConflictDeclaration(
             moduleId: moduleId,
-            diagnosticMessage: try consume(type: .stringLiteral)
+            diagnosticMessage: try consume(type: .stringLiteral, message: "Expected diagnostic message string literal")
         )
     }
 
@@ -392,9 +389,9 @@ public final class Parser {
     }
 
     @discardableResult
-    private func consume(type: TokenType) throws -> Token {
+    private func consume(type: TokenType, message: String) throws -> Token {
         guard match(type: type) else {
-            throw Error.expectedTokenType(type, token: currentToken)
+            throw Error.unexpectedToken(currentToken, message: message)
         }
         return previousToken
     }
