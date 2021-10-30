@@ -4,6 +4,7 @@ public final class ModuleMapParser {
     public enum Error: Swift.Error {
         case expectedTokenType(TokenType, token: Token)
         case expectedModuleDeclaration(Token?)
+        case unexpectedToken(Token, message: String)
     }
 
     private let fileURL: URL
@@ -101,11 +102,20 @@ public final class ModuleMapParser {
     }
 
     private func parseModuleMember() throws -> ModuleMember {
-        if match(type: .keywordRequires) {
-            return RequiresDeclaration(features: try parseFeatureList())
+        if currentToken.type == .keywordRequires {
+            return try parseRequiresDeclaration()
+        } else if canParseHeaderDeclaration() {
+            return try parseHeaderDeclaration()
+        } else if currentToken.type == .keywordUmbrella {
+            return try parseUmbrellaDirectoryDeclaration()
         } else {
             fatalError("implement remaining...")
         }
+    }
+
+    private func parseRequiresDeclaration() throws -> RequiresDeclaration {
+        try consume(type: .keywordRequires)
+        return RequiresDeclaration(features: try parseFeatureList())
     }
 
     private func parseFeatureList() throws -> [Feature] {
@@ -120,6 +130,67 @@ public final class ModuleMapParser {
         Feature(
             incompatible: match(type: .bang),
             identifier: try consume(type: .identifier)
+        )
+    }
+
+    private func canParseHeaderDeclaration() -> Bool {
+        switch currentToken.type {
+        case .keywordPrivate,
+             .keywordTextual,
+             .keywordHeader,
+             .keywordExclude:
+            return true
+        case .keywordUmbrella where peekNext()?.type == .keywordHeader:
+            // If the current token is 'umbrella', it will be either an umbrella header
+            // declaration or an umbrella directory declaration, so we check the next token.
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func parseHeaderDeclaration() throws -> HeaderDeclaration {
+        let kind = try parseHeaderKind()
+        try consume(type: .keywordHeader)
+        return HeaderDeclaration(
+            kind: kind,
+            filePath: try consume(type: .stringLiteral),
+            headerAttributes: try parseHeaderAttributes()
+        )
+    }
+
+    private func parseHeaderKind() throws -> HeaderDeclaration.Kind {
+        if match(type: .keywordUmbrella) {
+            return .umbrella
+        } else if match(type: .keywordExclude) {
+            return .exclude
+        } else {
+            let isPrivate = match(type: .keywordPrivate)
+            let isTextual = match(type: .keywordTextual)
+            return .normal(private: isPrivate, textual: isTextual)
+        }
+    }
+
+    private func parseHeaderAttributes() throws -> [HeaderAttribute] {
+        guard !isAtEnd && match(type: .leadingBrace) else { return [] }
+        var attributes: [HeaderAttribute] = []
+        while !isAtEnd && !match(type: .trailingBrace) {
+            attributes.append(try parseHeaderAttribute())
+        }
+        return attributes
+    }
+
+    private func parseHeaderAttribute() throws -> HeaderAttribute {
+        HeaderAttribute(
+            key: try consume(type: .identifier),
+            value: try consume(type: .integerLiteral)
+        )
+    }
+
+    private func parseUmbrellaDirectoryDeclaration() throws -> UmbrellaDirectoryDeclaration {
+        try consume(type: .keywordUmbrella)
+        return UmbrellaDirectoryDeclaration(
+            filePath: try consume(type: .stringLiteral)
         )
     }
 
@@ -138,6 +209,11 @@ public final class ModuleMapParser {
 
     private var isAtEnd: Bool {
         currentTokenIndex >= tokens.count
+    }
+
+    private func peekNext() -> Token? {
+        guard currentTokenIndex < tokens.count - 1 else { return nil }
+        return tokens[currentTokenIndex + 1]
     }
 
     @discardableResult

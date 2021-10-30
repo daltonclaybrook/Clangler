@@ -45,9 +45,9 @@ public struct HeaderDeclaration: ModuleMember {
     public let headerAttributes: [HeaderAttribute]
 }
 
-public enum HeaderAttribute {
-    case size(Token)
-    case mtime(Token)
+public struct HeaderAttribute {
+    let key: Token // Identifier
+    let value: Token // Integer
 }
 
 public struct UmbrellaDirectoryDeclaration: ModuleMember {
