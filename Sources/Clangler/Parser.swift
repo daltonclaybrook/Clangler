@@ -3,12 +3,14 @@ import Foundation
 /// A utility used to parse the contents of a Clang module map file into an abstract syntax
 /// tree (AST) representation.
 public final class Parser {
-    private let lexer = Lexer()
+    private let lexer: LexerType
     private var currentTokenIndex: Int = 0
     private var tokens: [Token] = []
     private var errors: [Located<ParseError>] = []
 
-    public init() {}
+    public init(lexer: LexerType = Lexer()) {
+        self.lexer = lexer
+    }
 
     public func parseFile(at url: URL) throws -> Result<ModuleMapFile, [Located<ParseError>]> {
         let fileContents = try String(contentsOf: url)
