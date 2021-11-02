@@ -1,44 +1,48 @@
 import Foundation
 
 public final class Parser {
-    public enum Error: Swift.Error {
-        case lexerProducedZeroTokens
-        case unexpectedToken(Token, message: String)
-    }
-
+    private let lexer = Lexer()
     private var currentTokenIndex: Int = 0
     private var tokens: [Token] = []
+    private var errors: [Located<ParseError>] = []
 
     public init() {}
 
-    public func parseFile(at url: URL) throws -> ModuleMapFile {
+    public func parseFile(at url: URL) throws -> Result<ModuleMapFile, [Located<ParseError>]> {
         let fileContents = try String(contentsOf: url)
-        return try parse(fileContents: fileContents)
+        return parse(fileContents: fileContents)
     }
 
-    public func parse(fileContents: String) throws -> ModuleMapFile {
-        let lexer = Lexer(fileContents: fileContents)
+    public func parse(fileContents: String) -> Result<ModuleMapFile, [Located<ParseError>]> {
+        (tokens, errors) = lexer.scanAllTokens(fileContents: fileContents)
         currentTokenIndex = 0
-        tokens = try lexer.scanAllTokens()
-        guard !tokens.isEmpty else {
-            throw Error.lexerProducedZeroTokens
-        }
+
+        precondition(!tokens.isEmpty, "The returned tokens array should never be empty")
+        precondition(tokens.last?.type == .endOfFile, "The returned tokens array must be terminated by an `.endOfFile` token")
         return parseModuleMapFile()
     }
 
     // MARK: - Parser functions
 
-    private func parseModuleMapFile() -> ModuleMapFile {
+    private func parseModuleMapFile() -> Result<ModuleMapFile, [Located<ParseError>]> {
         var declarations: [ModuleDeclarationType] = []
         while !isAtEnd {
             do {
                 declarations.append(try parseModuleDeclaration())
+            } catch let error as ParseError {
+                emitError(error)
+                synchronize()
             } catch let error {
-                print("error: \(error)")
+                assertionFailure("Unhandled error: \(error.localizedDescription)")
                 synchronize()
             }
         }
-        return ModuleMapFile(moduleDeclarations: declarations)
+
+        if errors.isEmpty {
+            return .success(ModuleMapFile(moduleDeclarations: declarations))
+        } else {
+            return .failure(errors)
+        }
     }
 
     private func parseModuleDeclaration() throws -> ModuleDeclarationType {
@@ -126,7 +130,7 @@ public final class Parser {
         case .keywordConflict:
             return try parseConflictDeclaration()
         default:
-            throw Error.unexpectedToken(currentToken, message: "Expected a module member declaration")
+            throw ParseError.unexpectedToken(currentToken.type, lexeme: currentToken.lexeme, message: "Expected a module member declaration")
         }
     }
 
@@ -289,7 +293,7 @@ public final class Parser {
             // parsed by caller
             return []
         } else {
-            throw Error.unexpectedToken(currentToken, message: "Expected a wildcard module identifier component")
+            throw ParseError.unexpectedToken(currentToken.type, lexeme: currentToken.lexeme, message: "Expected a wildcard module identifier component")
         }
     }
 
@@ -345,19 +349,17 @@ public final class Parser {
     // MARK: - Helper functions
 
     private var currentToken: Token {
-        isAtEnd ? tokens.last! : tokens[currentTokenIndex]
+        precondition(currentTokenIndex < tokens.count, "Token index out of bounds")
+        return tokens[currentTokenIndex]
     }
 
     private var previousToken: Token {
-        guard currentTokenIndex > 0 else {
-            fatalError("Attempt to access token previous to the first one")
-        }
+        precondition(currentTokenIndex > 0, "Attempt to access token previous to the first one")
         return tokens[currentTokenIndex - 1]
     }
 
     private var isAtEnd: Bool {
-        currentTokenIndex >= tokens.count ||
-            tokens[currentTokenIndex].type == .endOfFile
+        tokens[currentTokenIndex].type == .endOfFile
     }
 
     /// Return the token that is `count` ahead of the current token, or nil if no such token exists
@@ -391,16 +393,25 @@ public final class Parser {
     @discardableResult
     private func consume(type: TokenType, message: String) throws -> Token {
         guard match(type: type) else {
-            throw Error.unexpectedToken(currentToken, message: message)
+            throw ParseError.unexpectedToken(currentToken.type, lexeme: currentToken.lexeme, message: message)
         }
         return previousToken
+    }
+
+    private func emitError(_ error: ParseError) {
+        errors.append(
+            Located(value: error, line: currentToken.line, column: currentToken.column)
+        )
     }
 
     /// Advance up to the start of the next module declaration
     private func synchronize() {
         while !isAtEnd {
             switch currentToken.type {
-            case .keywordExplicit, .keywordFramework, .keywordModule, .keywordExtern:
+            case .keywordExplicit, .keywordModule, .keywordExtern:
+                return
+            case .keywordFramework where peek(count: 1)?.type == .keywordModule:
+                // Only return if part of a module declaration
                 return
             default:
                 currentTokenIndex += 1

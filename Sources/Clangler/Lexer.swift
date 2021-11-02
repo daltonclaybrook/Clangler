@@ -1,44 +1,43 @@
 import Foundation
 
+public typealias LexerResults = (tokens: [Token], errors: [Located<ParseError>])
+
 public protocol LexerType {
-    func scanAllTokens() throws -> [Token]
+    func scanAllTokens(fileURL: URL) throws -> LexerResults
+    func scanAllTokens(fileContents: String) -> LexerResults
 }
 
 public final class Lexer: LexerType {
-    public enum Error: Swift.Error {
-        case unterminatedString
-        case failedToMakeIntegerFromLexeme(String)
-    }
-
-    private let fileContents: String
-    private var cursor: Cursor
     private var scannedTokens: [Token] = []
+    private var errors: [Located<ParseError>] = []
 
     private var currentLexemeLine = 0
     private var currentLexemeColumn = 0
 
-    public init(fileContents: String) {
-        self.fileContents = fileContents
-        self.cursor = Cursor(string: fileContents)
+    public init() {}
+
+    public func scanAllTokens(fileURL: URL) throws -> LexerResults {
+        let fileContents = try String(contentsOf: fileURL)
+        return scanAllTokens(fileContents: fileContents)
     }
 
-    public convenience init(fileURL: URL) throws {
-        self.init(fileContents: try String(contentsOf: fileURL))
-    }
+    public func scanAllTokens(fileContents: String) -> LexerResults {
+        var cursor = Cursor(string: fileContents)
+        scannedTokens = []
+        errors = []
 
-    public func scanAllTokens() throws -> [Token] {
         while !cursor.isAtEnd {
-            startNewLexeme()
-            try scanNextToken()
+            startNewLexeme(cursor: cursor)
+            scanNextToken(cursor: &cursor)
         }
 
         makeToken(type: .endOfFile, lexeme: "")
-        return scannedTokens
+        return (scannedTokens, errors)
     }
 
     // MARK: - Private helpers
 
-    private func scanNextToken() throws {
+    private func scanNextToken(cursor: inout Cursor) {
         let next = cursor.advance()
         switch next {
         case ".":
@@ -58,34 +57,45 @@ public final class Lexer: LexerType {
         case "]":
             makeToken(type: .trailingBracket, lexeme: next)
         case "\"":
-            try scanStringLiteral()
+            scanStringLiteral(cursor: &cursor)
         case "/":
             if cursor.match(next: "/") {
-                scanCommentLine()
+                scanCommentLine(cursor: &cursor)
             } else if cursor.match(next: "*") {
-                scanCommentBlock()
+                scanCommentBlock(cursor: &cursor)
             } else {
                 // Unrecognized character. Emit error.
-                makeError(lexeme: next)
+                emitError(.unrecognizedCharacter(next))
             }
         default:
             if next.isWhitespace {
                 // Ignore whitespace
                 break
             } else if next.isNumber {
-                try scanIntegerLiteral()
+                scanIntegerLiteral(cursor: &cursor)
             } else if next.isIdentifierNonDigit {
-                scanIdentifierOrKeyword()
+                scanIdentifierOrKeyword(cursor: &cursor)
             } else {
                 // Unrecognized character. Emit error.
-                makeError(lexeme: next)
+                emitError(.unrecognizedCharacter(next))
             }
         }
     }
 
-    private func startNewLexeme() {
+    private func startNewLexeme(cursor: Cursor) {
         currentLexemeLine = cursor.currentLine
         currentLexemeColumn = cursor.currentColumn
+    }
+
+    /// Convenience function for generating an error at the current scan location
+    private func emitError(_ error: ParseError) {
+        errors.append(
+            Located(
+                value: error,
+                line: currentLexemeLine,
+                column: currentLexemeColumn
+            )
+        )
     }
 
     /// Convenience function for making a token using the current line and column
@@ -100,17 +110,15 @@ public final class Lexer: LexerType {
         )
     }
 
-    /// Convenience function for emitting an error token
-    private func makeError<S>(lexeme: S) where S: CustomStringConvertible {
-        makeToken(type: .lexerError, lexeme: lexeme)
-    }
-
-    private func scanStringLiteral() throws {
+    private func scanStringLiteral(cursor: inout Cursor) {
         // Start with the first quote since we've already scanned it
         var lexeme = String(cursor.previous)
         while !cursor.isAtEnd {
             let next = cursor.advance()
-            guard !next.isNewline else { throw Error.unterminatedString }
+            guard !next.isNewline else {
+                emitError(.unterminatedString(lexeme))
+                return
+            }
 
             lexeme.append(next)
             switch next {
@@ -126,10 +134,10 @@ public final class Lexer: LexerType {
             }
         }
         // Should have returned from inside the loop upon encountering a closing quote
-        throw Error.unterminatedString
+        emitError(.unterminatedString(lexeme))
     }
 
-    private func scanCommentLine() {
+    private func scanCommentLine(cursor: inout Cursor) {
         while !cursor.isAtEnd {
             if cursor.advance().isNewline {
                 return
@@ -137,7 +145,7 @@ public final class Lexer: LexerType {
         }
     }
 
-    private func scanCommentBlock() {
+    private func scanCommentBlock(cursor: inout Cursor) {
         while !cursor.isAtEnd {
             let next = cursor.advance()
             if next == "*" && cursor.match(next: "/") {
@@ -146,20 +154,21 @@ public final class Lexer: LexerType {
         }
     }
 
-    private func scanIntegerLiteral() throws {
+    private func scanIntegerLiteral(cursor: inout Cursor) {
         var integerString = String(cursor.previous)
         while !cursor.isAtEnd && cursor.peek().isNumber {
             integerString.append(cursor.advance())
         }
 
         guard Int(integerString) != nil else {
-            throw Error.failedToMakeIntegerFromLexeme(integerString)
+            emitError(.failedToMakeIntegerFromLexeme(integerString))
+            return
         }
 
         makeToken(type: .integerLiteral, lexeme: integerString)
     }
 
-    private func scanIdentifierOrKeyword() {
+    private func scanIdentifierOrKeyword(cursor: inout Cursor) {
         var lexeme = String(cursor.previous)
         while !cursor.isAtEnd {
             let next = cursor.peek()
