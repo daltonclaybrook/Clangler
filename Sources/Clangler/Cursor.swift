@@ -1,3 +1,4 @@
+/// A convenience utility for scanning the contents of a string and preserving line/column numbers
 public struct Cursor {
     public let string: String
     public private(set) var currentIndex: String.Index

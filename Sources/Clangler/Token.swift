@@ -8,16 +8,4 @@ public struct Token {
     public let column: Int
     /// The character string which makes up the token
     public let lexeme: String
-
-    public init(
-        type: TokenType,
-        line: Int,
-        column: Int,
-        lexeme: String
-    ) {
-        self.type = type
-        self.line = line
-        self.column = column
-        self.lexeme = lexeme
-    }
 }

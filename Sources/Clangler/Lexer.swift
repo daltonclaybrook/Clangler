@@ -7,6 +7,7 @@ public protocol LexerType {
     func scanAllTokens(fileContents: String) -> LexerResults
 }
 
+/// A utility used to scan the contents of a Clang module map file into an array of tokens
 public final class Lexer: LexerType {
     private var scannedTokens: [Token] = []
     private var errors: [Located<ParseError>] = []
