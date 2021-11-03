@@ -152,7 +152,7 @@ public struct InferredSubmoduleDeclaration {
     /// Specifies that this module corresponds to a Darwin-style framework
     public let framework: Bool
     /// A collection of identifiers that describe specific behavior of other declarations
-    public let attributes: [Token]
+    public let attributes: [String]
     /// A collection of members of the module
     public let members: [InferredSubmoduleMember]
 }
@@ -210,5 +210,5 @@ public struct ConflictDeclaration {
     /// Specifies the module with which the enclosing module conflicts
     public let moduleId: ModuleId
     /// A message to be provided as part of the compiler diagnostic when two modules conflict.
-    public let diagnosticMessage: Token
+    public let diagnosticMessage: String
 }

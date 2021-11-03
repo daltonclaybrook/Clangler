@@ -9,3 +9,15 @@ public struct Token {
     /// The character string which makes up the token
     public let lexeme: String
 }
+
+public extension Token {
+    var stringLiteralValue: String {
+        precondition(type == .stringLiteral, "The token is not a string literal")
+
+        /// Strip leading and trailing quotes
+        var value = lexeme
+        value.removeFirst()
+        value.removeLast()
+        return value
+    }
+}

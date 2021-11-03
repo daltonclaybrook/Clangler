@@ -161,11 +161,7 @@ public final class Lexer: LexerType {
             integerString.append(cursor.advance())
         }
 
-        guard Int(integerString) != nil else {
-            emitError(.failedToMakeIntegerFromLexeme(integerString))
-            return
-        }
-
+        // Will validate that the lexeme is parsable to an `Int` in the Parser
         makeToken(type: .integerLiteral, lexeme: integerString)
     }
 
