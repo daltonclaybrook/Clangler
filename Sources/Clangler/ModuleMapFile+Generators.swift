@@ -19,9 +19,9 @@ extension ModuleDeclaration: Generating {
 extension LocalModuleDeclaration: Generating {
     public func generate(with indentation: Generator.Indentation) -> String {
         let declarationLine = generateDeclarationLine(with: indentation)
-        let membersLine = "" // todo: generate members
+        let membersString = generateMembers(with: indentation.incrementDepth())
         let closingBraceLine = indentation.stringValue + "}"
-        return [declarationLine, membersLine, closingBraceLine].joined(separator: "\n")
+        return [declarationLine, membersString, closingBraceLine].joined(separator: "\n")
     }
 
     // MARK: Private helpers
@@ -43,6 +43,11 @@ extension LocalModuleDeclaration: Generating {
 
         return indentation.stringValue + components.joined(separator: " ")
     }
+
+    private func generateMembers(with indentation: Generator.Indentation) -> String {
+        let components = members.map { $0.generate(with: indentation)}
+        return components.joined(separator: "\n")
+    }
 }
 
 extension ExternModuleDeclaration: Generating {
@@ -55,6 +60,33 @@ extension ExternModuleDeclaration: Generating {
 extension ModuleId: Generating {
     public func generate(with indentation: Generator.Indentation) -> String {
         dotSeparatedIdentifiers.joined(separator: ".")
+    }
+}
+
+extension ModuleMember: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        switch self {
+        case .requires(let declaration):
+            return declaration.generate(with: indentation)
+        case .header(let declaration):
+            return declaration.generate(with: indentation)
+        case .umbrellaDirectory(let declaration):
+            return declaration.generate(with: indentation)
+        case .submodule(let declaration):
+            return declaration.generate(with: indentation)
+        case .export(let declaration):
+            return "" // todo
+        case .exportAs(let declaration):
+            return "" // todo
+        case .use(let declaration):
+            return "" // todo
+        case .link(let declaration):
+            return "" // todo
+        case .configMacros(let declaration):
+            return "" // todo
+        case .conflict(let declaration):
+            return "" // todo
+        }
     }
 }
 
@@ -106,6 +138,64 @@ extension HeaderDeclaration: Generating {
         components.insert("{", at: 0)
         components.append("}")
         return components.joined(separator: " ")
+    }
+}
+
+extension UmbrellaDirectoryDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        let string = "umbrella \(filePath.quoted)"
+        return indentation.stringValue + string
+    }
+}
+
+extension SubmoduleDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        switch self {
+        case .module(let declaration):
+            return declaration.generate(with: indentation)
+        case .inferred(let declaration):
+            return declaration.generate(with: indentation)
+        }
+    }
+}
+
+extension InferredSubmoduleDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        let declarationLine = generateDeclarationLine(with: indentation)
+        let membersString = generateMembers(with: indentation.incrementDepth())
+        let closingBraceLine = indentation.stringValue + "}"
+        return [declarationLine, membersString, closingBraceLine].joined(separator: "\n")
+    }
+
+    // MARK: Private helpers
+
+    private func generateDeclarationLine(with indentation: Generator.Indentation) -> String {
+        var components: [String] = []
+        if explicit {
+            components.append("explicit")
+        }
+        if framework {
+            components.append("framework")
+        }
+        components.append("module")
+        components.append("*")
+
+        let generatedAttributes = attributes.map { "[\($0)]" }
+        components.append(contentsOf: generatedAttributes)
+        components.append("{")
+
+        return indentation.stringValue + components.joined(separator: " ")
+    }
+
+    private func generateMembers(with indentation: Generator.Indentation) -> String {
+        let components = members.map { $0.generate(with: indentation)}
+        return components.joined(separator: "\n")
+    }
+}
+
+extension InferredSubmoduleMember: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        indentation.stringValue + "export *"
     }
 }
 
