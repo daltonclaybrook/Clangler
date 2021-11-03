@@ -57,9 +57,9 @@ public struct ExternModuleDeclaration {
     public var moduleId: ModuleId
     /// The file where the module is declared. The file can be referenced either by an
     /// absolute path or by a path relative to the current map file.
-    public var filePath: Token
+    public var filePath: String
 
-    public init(moduleId: ModuleId, filePath: Token) {
+    public init(moduleId: ModuleId, filePath: String) {
         self.moduleId = moduleId
         self.filePath = filePath
     }

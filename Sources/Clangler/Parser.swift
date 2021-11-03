@@ -75,10 +75,12 @@ public final class Parser {
     private func parseExternModule() throws -> ExternModuleDeclaration {
         try consume(type: .keywordExtern, message: "Expected 'extern' keyword")
         try consume(type: .keywordModule, message: "Expected 'module' keyword")
+        let moduleId = try parseModuleId()
+        let filePathToken = try consume(type: .stringLiteral, message: "Expected file path string literal")
 
         return ExternModuleDeclaration(
-            moduleId: try parseModuleId(),
-            filePath: try consume(type: .stringLiteral, message: "Expected file path string literal")
+            moduleId: moduleId,
+            filePath: filePathToken.stringLiteralValue
         )
     }
 
