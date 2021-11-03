@@ -75,17 +75,17 @@ extension ModuleMember: Generating {
         case .submodule(let declaration):
             return declaration.generate(with: indentation)
         case .export(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         case .exportAs(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         case .use(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         case .link(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         case .configMacros(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         case .conflict(let declaration):
-            return "" // todo
+            return declaration.generate(with: indentation)
         }
     }
 }
@@ -162,6 +162,65 @@ extension SubmoduleDeclaration: Generating {
 extension InferredSubmoduleMember: Generating {
     public func generate(with indentation: Generator.Indentation) -> String {
         indentation.stringValue + "export *"
+    }
+}
+
+extension ExportDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        indentation.stringValue + "export \(moduleId.generate(with: indentation))"
+    }
+}
+
+extension WildcardModuleId: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        var components = dotSeparatedIdentifiers
+        if trailingStar {
+            components.append("*")
+        }
+        return components.joined(separator: ".")
+    }
+}
+
+extension ExportAsDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        indentation.stringValue + "export_as \(identifier)"
+    }
+}
+
+extension UseDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        indentation.stringValue + "use \(moduleID.generate(with: indentation))"
+    }
+}
+
+extension LinkDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        var components = ["link"]
+        if framework {
+            components.append("framework")
+        }
+        components.append(libraryOrFrameworkName.quoted)
+        return indentation.stringValue + components.joined(separator: " ")
+    }
+}
+
+extension ConfigMacrosDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        var components = ["config_macros"]
+        let generatedAttributes = attributes.map { "[\($0)]" }
+        components.append(contentsOf: generatedAttributes)
+        if !commaSeparatedMacroNames.isEmpty {
+            let nameString = commaSeparatedMacroNames.joined(separator: ", ")
+            components.append(nameString)
+        }
+        return indentation.stringValue + components.joined(separator: " ")
+    }
+}
+
+extension ConflictDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        let string = "conflict \(moduleId.generate(with: indentation)), \(diagnosticMessage.quoted)"
+        return indentation.stringValue + string
     }
 }
 
