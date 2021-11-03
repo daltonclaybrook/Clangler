@@ -1,3 +1,5 @@
+import Foundation
+
 /// Utility used to generate module map file contents from an abstract syntax tree (AST)
 /// representation. This is the reverse of `Parser`.
 public struct Generator {
@@ -20,6 +22,11 @@ public struct Generator {
     public func generateFileContents(with file: ModuleMapFile) -> String {
         let indentation = Indentation(style: style, depth: 0)
         return file.generate(with: indentation)
+    }
+
+    public func generateAndSave(file: ModuleMapFile, to fileURL: URL) throws {
+        let fileContents = generateFileContents(with: file)
+        try fileContents.write(to: fileURL, atomically: true, encoding: .utf8)
     }
 }
 
