@@ -18,6 +18,15 @@ extension ModuleDeclaration: Generating {
 
 extension LocalModuleDeclaration: Generating {
     public func generate(with indentation: Generator.Indentation) -> String {
+        let declarationLine = generateDeclarationLine(with: indentation)
+        let membersLine = "" // todo: generate members
+        let closingBraceLine = indentation.stringValue + "}"
+        return [declarationLine, membersLine, closingBraceLine].joined(separator: "\n")
+    }
+
+    // MARK: Private helpers
+
+    private func generateDeclarationLine(with indentation: Generator.Indentation) -> String {
         var components: [String] = []
         if explicit {
             components.append("explicit")
@@ -32,10 +41,7 @@ extension LocalModuleDeclaration: Generating {
         components.append(contentsOf: generatedAttributes)
         components.append("{")
 
-        let declarationLine = indentation.stringValue + components.joined(separator: " ")
-        let membersLine = "" // todo: generate members
-        let closingBraceLine = indentation.stringValue + "}"
-        return [declarationLine, membersLine, closingBraceLine].joined(separator: "\n")
+        return indentation.stringValue + components.joined(separator: " ")
     }
 }
 
@@ -49,6 +55,57 @@ extension ExternModuleDeclaration: Generating {
 extension ModuleId: Generating {
     public func generate(with indentation: Generator.Indentation) -> String {
         dotSeparatedIdentifiers.joined(separator: ".")
+    }
+}
+
+extension RequiresDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        let featuresString = features
+            .map { $0.generate(with: indentation) }
+            .joined(separator: ", ")
+        let string = "requires \(featuresString)"
+        return indentation.stringValue + string
+    }
+}
+
+extension Feature: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        let prefix = incompatible ? "!" : ""
+        return prefix + identifier
+    }
+}
+
+extension HeaderDeclaration: Generating {
+    public func generate(with indentation: Generator.Indentation) -> String {
+        var components: [String] = []
+        switch kind {
+        case .standard(let isPrivate):
+            if isPrivate { components.append("private") }
+        case .textual(let isPrivate):
+            if isPrivate { components.append("private") }
+            components.append("textual")
+        case .umbrella:
+            components.append("umbrella")
+        case .exclude:
+            components.append("exclude")
+        }
+        components.append("header")
+        components.append(filePath.quoted)
+
+        if let attributesComponent = generateHeaderAttributes() {
+            components.append(attributesComponent)
+        }
+        return indentation.stringValue + components.joined(separator: " ")
+    }
+
+    // MARK: Private helpers
+
+    private func generateHeaderAttributes() -> String? {
+        var components = headerAttributes.map { "\($0.key) \($0.value)" }
+        guard !components.isEmpty else { return nil }
+        components.insert("{", at: 0)
+        components.append("}")
+        return components.joined(separator: " ")
     }
 }
 
