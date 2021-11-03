@@ -1,5 +1,5 @@
 /// Errors that can be reported by the Lexer/Parser
-public enum ParseError: Error {
+public enum ParseError: Error, Equatable {
     /// A string literal could not be terminated by a closing quote. This can be caused by an
     /// unescaped newline, end of file, etc.
     case unterminatedString(String)

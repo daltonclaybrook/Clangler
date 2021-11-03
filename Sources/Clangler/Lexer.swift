@@ -32,6 +32,8 @@ public final class Lexer: LexerType {
             scanNextToken(cursor: &cursor)
         }
 
+        // update numbers to end-of-file position
+        startNewLexeme(cursor: cursor)
         makeToken(type: .endOfFile, lexeme: "")
         return (scannedTokens, errors)
     }
@@ -123,9 +125,6 @@ public final class Lexer: LexerType {
 
             lexeme.append(next)
             switch next {
-            case "\\" where cursor.peek().isNewline:
-                // If the next character is an escaped newline, append it. This is allowed.
-                lexeme.append(cursor.advance())
             case "\"":
                 // Lexeme is terminated with the closing quote. make the token.
                 makeToken(type: .stringLiteral, lexeme: lexeme)
@@ -141,7 +140,7 @@ public final class Lexer: LexerType {
     private func scanCommentLine(cursor: inout Cursor) {
         while !cursor.isAtEnd {
             if cursor.advance().isNewline {
-                return
+                break
             }
         }
     }
@@ -150,7 +149,7 @@ public final class Lexer: LexerType {
         while !cursor.isAtEnd {
             let next = cursor.advance()
             if next == "*" && cursor.match(next: "/") {
-                return
+                break
             }
         }
     }
