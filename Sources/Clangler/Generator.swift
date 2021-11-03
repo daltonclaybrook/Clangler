@@ -10,6 +10,17 @@ public struct Generator {
         public let style: Style
         public let depth: Int
     }
+
+    private let style: Indentation.Style
+
+    public init(indentationStyle: Indentation.Style) {
+        self.style = indentationStyle
+    }
+
+    public func generateFileContents(with file: ModuleMapFile) -> String {
+        let indentation = Indentation(style: style, depth: 0)
+        return file.generate(with: indentation)
+    }
 }
 
 extension Generator.Indentation {
