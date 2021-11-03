@@ -16,7 +16,7 @@ extension ModuleDeclaration: Generating {
     }
 }
 
-extension LocalModuleDeclaration: Generating {
+extension LocalModuleDeclarationType {
     public func generate(with indentation: Generator.Indentation) -> String {
         let declarationLine = generateDeclarationLine(with: indentation)
         let membersString = generateMembers(with: indentation.incrementDepth())
@@ -35,7 +35,7 @@ extension LocalModuleDeclaration: Generating {
             components.append("framework")
         }
         components.append("module")
-        components.append(moduleId.generate(with: indentation))
+        components.append(moduleIdString)
 
         let generatedAttributes = attributes.map { "[\($0)]" }
         components.append(contentsOf: generatedAttributes)
@@ -156,40 +156,6 @@ extension SubmoduleDeclaration: Generating {
         case .inferred(let declaration):
             return declaration.generate(with: indentation)
         }
-    }
-}
-
-extension InferredSubmoduleDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
-        let declarationLine = generateDeclarationLine(with: indentation)
-        let membersString = generateMembers(with: indentation.incrementDepth())
-        let closingBraceLine = indentation.stringValue + "}"
-        return [declarationLine, membersString, closingBraceLine].joined(separator: "\n")
-    }
-
-    // MARK: Private helpers
-
-    private func generateDeclarationLine(with indentation: Generator.Indentation) -> String {
-        var components: [String] = []
-        if explicit {
-            components.append("explicit")
-        }
-        if framework {
-            components.append("framework")
-        }
-        components.append("module")
-        components.append("*")
-
-        let generatedAttributes = attributes.map { "[\($0)]" }
-        components.append(contentsOf: generatedAttributes)
-        components.append("{")
-
-        return indentation.stringValue + components.joined(separator: " ")
-    }
-
-    private func generateMembers(with indentation: Generator.Indentation) -> String {
-        let components = members.map { $0.generate(with: indentation)}
-        return components.joined(separator: "\n")
     }
 }
 
