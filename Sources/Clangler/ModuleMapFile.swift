@@ -5,7 +5,11 @@
 /// Represents a complete module map file, which is a collection of declarations
 public struct ModuleMapFile {
     /// The root-level module declarations in the file
-    public let moduleDeclarations: [ModuleDeclaration]
+    public var moduleDeclarations: [ModuleDeclaration]
+
+    public init(moduleDeclarations: [ModuleDeclaration]) {
+        self.moduleDeclarations = moduleDeclarations
+    }
 }
 
 /// Represents a module declaration, which can be a module that is defined locally
@@ -22,30 +26,53 @@ public struct LocalModuleDeclaration {
     /// Can only be applied to a submodule. The contents of explicit submodules are
     /// only made available when the submodule itself was explicitly named in an import
     /// declaration or was re-exported from an imported module.
-    public let explicit: Bool
+    public var explicit: Bool
     /// Specifies that this module corresponds to a Darwin-style framework
-    public let framework: Bool
+    public var framework: Bool
     /// The identifier name of the module
-    public let moduleId: ModuleId
+    public var moduleId: ModuleId
     /// A collection of identifiers that describe specific behavior of other declarations
-    public let attributes: [String]
+    public var attributes: [String]
     /// A collection of members of the module. There are many different kinds of members.
-    public let members: [ModuleMember]
+    public var members: [ModuleMember]
+
+    public init(
+        explicit: Bool,
+        framework: Bool,
+        moduleId: ModuleId,
+        attributes: [String],
+        members: [ModuleMember]
+    ) {
+        self.explicit = explicit
+        self.framework = framework
+        self.moduleId = moduleId
+        self.attributes = attributes
+        self.members = members
+    }
 }
 
 /// A module declared in a different file and merely referenced from the containing file
 public struct ExternModuleDeclaration {
     /// The identifier name of the module
-    public let moduleId: ModuleId
+    public var moduleId: ModuleId
     /// The file where the module is declared. The file can be referenced either by an
     /// absolute path or by a path relative to the current map file.
-    public let filePath: Token
+    public var filePath: Token
+
+    public init(moduleId: ModuleId, filePath: Token) {
+        self.moduleId = moduleId
+        self.filePath = filePath
+    }
 }
 
 /// The identifier name of a module
 public struct ModuleId {
     /// The list of identifier strings that comprise the full identifier when dot-joined
-    public let dotSeparatedIdentifiers: [String]
+    public var dotSeparatedIdentifiers: [String]
+
+    public init(dotSeparatedIdentifiers: [String]) {
+        self.dotSeparatedIdentifiers = dotSeparatedIdentifiers
+    }
 }
 
 /// The various kinds of child members a module declaration can possess
@@ -78,14 +105,23 @@ public enum ModuleMember {
 public struct RequiresDeclaration {
     /// The language dialects, platforms, environments and target specific features that must be
     /// present for the enclosing module to be accessible
-    public let features: [Feature]
+    public var features: [Feature]
+
+    public init(features: [Feature]) {
+        self.features = features
+    }
 }
 
 public struct Feature {
     /// If true, indicates that the feature is incompatible with the module
-    public let incompatible: Bool
+    public var incompatible: Bool
     /// The string identifier of the feature
-    public let identifier: String
+    public var identifier: String
+
+    public init(incompatible: Bool, identifier: String) {
+        self.incompatible = incompatible
+        self.identifier = identifier
+    }
 }
 
 /// Specifies that a particular header is associated with the enclosing module.
@@ -111,12 +147,18 @@ public struct HeaderDeclaration {
     }
 
     /// Indicates how the header contributes to the module
-    public let kind: Kind
+    public var kind: Kind
     /// The file path of the header file
-    public let filePath: String
+    public var filePath: String
     /// The use of header attributes avoids the need for Clang to speculatively `stat` every header
     /// referenced by a module map, but should typically only be used in machine-generated module maps
-    public let headerAttributes: [HeaderAttribute]
+    public var headerAttributes: [HeaderAttribute]
+
+    public init(kind: Kind, filePath: String, headerAttributes: [HeaderAttribute]) {
+        self.kind = kind
+        self.filePath = filePath
+        self.headerAttributes = headerAttributes
+    }
 }
 
 /// The use of header attributes avoids the need for Clang to speculatively `stat` every header
@@ -126,12 +168,21 @@ public struct HeaderAttribute {
     let key: String
     /// The attribute value integer
     let value: Int
+
+    public init(key: String, value: Int) {
+        self.key = key
+        self.value = value
+    }
 }
 
 /// Specifies that all of the headers in the specified directory should be included within the module.
 public struct UmbrellaDirectoryDeclaration {
     /// The file path string of the umbrella directory
-    public let filePath: String
+    public var filePath: String
+
+    public init(filePath: String) {
+        self.filePath = filePath
+    }
 }
 
 /// Describes modules that are nested within their enclosing module.
@@ -148,67 +199,113 @@ public enum SubmoduleDeclaration {
 public struct InferredSubmoduleDeclaration {
     /// The contents of explicit submodules are only made available when the submodule itself was
     /// explicitly named in an import declaration or was re-exported from an imported module.
-    public let explicit: Bool
+    public var explicit: Bool
     /// Specifies that this module corresponds to a Darwin-style framework
-    public let framework: Bool
+    public var framework: Bool
     /// A collection of identifiers that describe specific behavior of other declarations
-    public let attributes: [String]
+    public var attributes: [String]
     /// A collection of members of the module
-    public let members: [InferredSubmoduleMember]
+    public var members: [InferredSubmoduleMember]
+
+    public init(
+        explicit: Bool,
+        framework: Bool,
+        attributes: [String],
+        members: [InferredSubmoduleMember]
+    ) {
+        self.explicit = explicit
+        self.framework = framework
+        self.attributes = attributes
+        self.members = members
+    }
 }
 
 /// A wildcard export declaration (i.e. `export *`)
-public struct InferredSubmoduleMember {}
+public struct InferredSubmoduleMember {
+    public init() {}
+}
 
 /// Specifies which imported modules will automatically be re-exported as part of a given module’s API.
 public struct ExportDeclaration {
     /// The wildcard identifier indicating which modules will be re-exported
-    public let moduleId: WildcardModuleId
+    public var moduleId: WildcardModuleId
+
+    public init(moduleId: WildcardModuleId) {
+        self.moduleId = moduleId
+    }
 }
 
 /// A wildcard identifier indicating which modules will be re-exported
 public struct WildcardModuleId {
     /// The list of string identifiers making up the prefix of a module identifier
-    public let dotSeparatedIdentifiers: [String]
+    public var dotSeparatedIdentifiers: [String]
     /// Whether the module identifier is appended with a `*`, indicating a wildcard
-    public let trailingStar: Bool
+    public var trailingStar: Bool
+
+    public init(dotSeparatedIdentifiers: [String], trailingStar: Bool) {
+        self.dotSeparatedIdentifiers = dotSeparatedIdentifiers
+        self.trailingStar = trailingStar
+    }
 }
 
 /// Specifies that the current module will have its interface re-exported by the named module.
 public struct ExportAsDeclaration {
     /// The module that the current module will be re-exported through. Only top-level modules can
     /// be re-exported.
-    public let identifier: String
+    public var identifier: String
+
+    public init(identifier: String) {
+        self.identifier = identifier
+    }
 }
 
 /// Specifies another module that the current top-level module intends to use.
 public struct UseDeclaration {
     /// The module to be used by the top-level module
-    public let moduleID: ModuleId
+    public var moduleID: ModuleId
+
+    public init(moduleID: ModuleId) {
+        self.moduleID = moduleID
+    }
 }
 
 /// Specifies a library or framework against which a program should be linked if the enclosing module
 /// is imported in any translation unit in that program.
 public struct LinkDeclaration {
     /// Whether the linker flag should take the form `-lMyLib` or `-framework MyFramework`
-    public let framework: Bool
+    public var framework: Bool
     /// The name of the library or framework to link
-    public let libraryOrFrameworkName: String
+    public var libraryOrFrameworkName: String
+
+    public init(framework: Bool, libraryOrFrameworkName: String) {
+        self.framework = framework
+        self.libraryOrFrameworkName = libraryOrFrameworkName
+    }
 }
 
 /// Specifies the set of configuration macros that have an effect on the API of the enclosing module.
 public struct ConfigMacrosDeclaration {
     /// Optional attributes used in the declaration
-    public let attributes: [String]
+    public var attributes: [String]
     /// The list of names of the macros
-    public let commaSeparatedMacroNames: [String]
+    public var commaSeparatedMacroNames: [String]
+
+    public init(attributes: [String], commaSeparatedMacroNames: [String]) {
+        self.attributes = attributes
+        self.commaSeparatedMacroNames = commaSeparatedMacroNames
+    }
 }
 
 /// Describes a case where the presence of two different modules in the same translation unit is likely
 /// to cause a problem.
 public struct ConflictDeclaration {
     /// Specifies the module with which the enclosing module conflicts
-    public let moduleId: ModuleId
+    public var moduleId: ModuleId
     /// A message to be provided as part of the compiler diagnostic when two modules conflict.
-    public let diagnosticMessage: String
+    public var diagnosticMessage: String
+
+    public init(moduleId: ModuleId, diagnosticMessage: String) {
+        self.moduleId = moduleId
+        self.diagnosticMessage = diagnosticMessage
+    }
 }
