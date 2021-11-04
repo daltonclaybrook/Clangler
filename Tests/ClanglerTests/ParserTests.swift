@@ -320,4 +320,65 @@ final class ParserTests: XCTestCase {
             )
         )
     }
+
+    func testLinkDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            link framework "UIKit"
+            link "z"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members
+            .compactMap(\.link) ?? []
+        XCTAssertEqual(members, [
+            LinkDeclaration(framework: true, libraryOrFrameworkName: "UIKit"),
+            LinkDeclaration(framework: false, libraryOrFrameworkName: "z")
+        ])
+    }
+
+    func testConfigMacrosDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            config_macros
+            config_macros NDEBUG
+            config_macros [exhaustive] NDEBUG, LOG_LEVEL
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members
+            .compactMap(\.configMacros) ?? []
+        XCTAssertEqual(members, [
+            ConfigMacrosDeclaration(
+                attributes: [],
+                commaSeparatedMacroNames: []
+            ),
+            ConfigMacrosDeclaration(
+                attributes: [],
+                commaSeparatedMacroNames: ["NDEBUG"]
+            ),
+            ConfigMacrosDeclaration(
+                attributes: ["exhaustive"],
+                commaSeparatedMacroNames: ["NDEBUG", "LOG_LEVEL"]
+            )
+        ])
+    }
+
+    func testConflictDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            conflict OtherLib, "We don't like the other lib"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].conflict,
+            ConflictDeclaration(
+                moduleId: ModuleId(dotSeparatedIdentifiers: ["OtherLib"]),
+                diagnosticMessage: "We don't like the other lib"
+            )
+        )
+    }
 }
