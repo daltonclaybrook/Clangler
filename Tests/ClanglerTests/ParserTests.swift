@@ -58,4 +58,34 @@ final class ParserTests: XCTestCase {
             )
         )
     }
+
+    func testModuleIdWithMultipleComponentsIsParsed() throws {
+        let contents = "module MyLib.Foo.Bar {}"
+        let file = try subject.parse(fileContents: contents).get()
+        let moduleId = file.moduleDeclarations[0].local?.moduleId
+        XCTAssertEqual(
+            moduleId,
+            ModuleId(dotSeparatedIdentifiers: ["MyLib", "Foo", "Bar"])
+        )
+    }
+
+    func testRequiresDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            requires objc, !blocks
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].requires,
+            RequiresDeclaration(
+                features: [
+                    Feature(incompatible: false, identifier: "objc"),
+                    Feature(incompatible: true, identifier: "blocks")
+                ]
+            )
+        )
+    }
 }
