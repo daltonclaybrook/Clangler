@@ -44,10 +44,6 @@ extension Generator.Indentation {
     func incrementDepth() -> Generator.Indentation {
         Generator.Indentation(style: style, depth: depth + 1)
     }
-
-    func decrementDepth() -> Generator.Indentation {
-        Generator.Indentation(style: style, depth: depth - 1)
-    }
 }
 
 public protocol Generating {

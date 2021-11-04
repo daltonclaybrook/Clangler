@@ -17,6 +17,21 @@ final class GeneratorTests: XCTestCase {
         XCTAssertEqual(contents, exported)
     }
 
+    func testGeneratorTabsIndentationIsCorrect() throws {
+        let contents = """
+        module MyLib {
+        \tmodule MySub {
+        \t\theader \"Header.h\"
+        \t}
+        }
+        """
+        let result = Parser().parse(fileContents: contents)
+        let file = try result.get()
+        subject = Generator(indentationStyle: .tabs)
+        let exported = subject.generateFileContents(with: file)
+        XCTAssertEqual(contents, exported)
+    }
+
     // MARK: - Private helpers
 
     private var completeContents: String {
