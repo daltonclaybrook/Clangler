@@ -381,4 +381,65 @@ final class ParserTests: XCTestCase {
             )
         )
     }
+
+    // MARK: - Error tests
+
+    func testInvalidModuleDeclarationThrowsError() throws {
+        let contents = """
+        module MyLib {
+            oops
+        }
+        """
+        let errors = try XCTUnwrap(subject.parse(fileContents: contents).failure).map(\.value)
+        XCTAssertEqual(errors, [
+            ParseError.unexpectedToken(.identifier, lexeme: "oops", message: "Expected a module member declaration")
+        ])
+    }
+
+    func testInvalidIntegerThrowsError() throws {
+        let overflow = "19223372036854775807"
+        let contents = """
+        module MyLib {
+            header "MyLib.h" { size \(overflow) }
+        }
+        """
+        let errors = try XCTUnwrap(subject.parse(fileContents: contents).failure).map(\.value)
+        XCTAssertEqual(errors, [
+            ParseError.failedToMakeIntegerFromLexeme(overflow)
+        ])
+    }
+
+    func testInvalidWildcardModuleIdThrowsError() throws {
+        let contents = """
+        module MyLib {
+            export "literal"
+        }
+        """
+        let errors = try XCTUnwrap(subject.parse(fileContents: contents).failure).map(\.value)
+        XCTAssertEqual(errors, [
+            ParseError.unexpectedToken(.stringLiteral, lexeme: "\"literal\"", message: "Expected a wildcard module identifier component")
+        ])
+    }
+
+    func testMissingTrailingBraceInModuleThrowsError() throws {
+        let contents = """
+        module MyLib {
+            header "MyLib.h"
+        """
+        let errors = try XCTUnwrap(subject.parse(fileContents: contents).failure).map(\.value)
+        XCTAssertEqual(errors, [
+            ParseError.unexpectedToken(.endOfFile, lexeme: "", message: "Expected '}' after module members block")
+        ])
+    }
+}
+
+extension Result {
+    var failure: Failure? {
+        switch self {
+        case .success:
+            return nil
+        case .failure(let error):
+            return error
+        }
+    }
 }

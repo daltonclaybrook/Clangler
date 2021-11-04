@@ -24,3 +24,4 @@ public struct Located<T> {
 }
 
 extension Located: Error where T: Error {}
+extension Located: Equatable where T: Equatable {}
