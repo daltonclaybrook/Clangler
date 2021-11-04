@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
 
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
 
       - name: Covert Swift coverage report to lcov
         run: |
-          llvm-cov export -format="lcov" \
+          xcrun llvm-cov export -format="lcov" \
           -instr-profile=.build/debug/codecov/default.profdata \
           .build/debug/ClanglerPackageTests.xctest > ./coverage.lcov
 
