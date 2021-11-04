@@ -15,7 +15,7 @@ final class ParserTests: XCTestCase {
         XCTAssertEqual(file, ModuleMapFile(moduleDeclarations: []))
     }
 
-    func testEmptyModuleIsParsed() throws {
+    func testEmptyModuleDeclarationIsParsed() throws {
         let contents = "module MyLib {}"
         let file = try subject.parse(fileContents: contents).get()
         XCTAssertEqual(file.moduleDeclarations.count, 1)
@@ -31,7 +31,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testExplicitFrameworkModuleIsParsed() throws {
+    func testExplicitFrameworkModuleDeclarationIsParsed() throws {
         let contents = "explicit framework module MyLib {}"
         let file = try subject.parse(fileContents: contents).get()
         let declaration = file.moduleDeclarations.first?.local
@@ -46,7 +46,7 @@ final class ParserTests: XCTestCase {
         XCTAssertEqual(declaration?.attributes, ["system", "extern_c"])
     }
 
-    func testExternModuleIsParsed() throws {
+    func testExternModuleDeclarationIsParsed() throws {
         let contents = "extern module MyLib \"my_lib/module.modulemap\""
         let file = try subject.parse(fileContents: contents).get()
         XCTAssertEqual(file.moduleDeclarations.count, 1)
@@ -89,7 +89,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testStandardHeaderIsParsed() throws {
+    func testStandardHeaderDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             private header "MyLib.h"
@@ -108,7 +108,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testTextualHeaderIsParsed() throws {
+    func testTextualHeaderDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             textual header "MyLib.h"
@@ -127,7 +127,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testUmbrellaHeaderIsParsed() throws {
+    func testUmbrellaHeaderDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             umbrella header "MyLib.h"
@@ -146,7 +146,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testExcludeHeaderIsParsed() throws {
+    func testExcludeHeaderDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             exclude header "MyLib.h"
@@ -180,7 +180,7 @@ final class ParserTests: XCTestCase {
         ])
     }
 
-    func testMultipleHeadersAreParsed() throws {
+    func testMultipleHeaderDeclarationsAreParsed() throws {
         let contents = """
         module MyLib {
             header "MyLib.h"
@@ -194,7 +194,7 @@ final class ParserTests: XCTestCase {
         XCTAssertEqual(headerFiles, ["MyLib.h", "OtherHeader.h"])
     }
 
-    func testUmbrellaDirectoryIsParsed() throws {
+    func testUmbrellaDirectoryDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             umbrella "MyDirectory"
@@ -209,7 +209,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testSubmoduleIsParsed() throws {
+    func testSubmoduleDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             explicit module MySubLib.Foo {
@@ -234,7 +234,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testInferredSubmoduleIsParsed() throws {
+    func testInferredSubmoduleDeclarationIsParsed() throws {
         let contents = """
         module MyLib {
             explicit framework module * [system] {
@@ -256,7 +256,7 @@ final class ParserTests: XCTestCase {
         )
     }
 
-    func testExportsAreParsed() throws {
+    func testExportDeclarationsAreParsed() throws {
         let contents = """
         module MyLib {
             export *
@@ -287,5 +287,37 @@ final class ParserTests: XCTestCase {
                 trailingStar: true
             )
         ])
+    }
+
+    func testExportAsDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            export_as FooBar
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].exportAs,
+            ExportAsDeclaration(identifier: "FooBar")
+        )
+    }
+
+    func testUseDeclarationIsParsed() throws {
+        let contents = """
+        module MyLib {
+            use Foo.Bar
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].use,
+            UseDeclaration(
+                moduleID: ModuleId(dotSeparatedIdentifiers: ["Foo", "Bar"])
+            )
+        )
     }
 }
