@@ -1,0 +1,96 @@
+module-map-file:
+    module-declaration*
+
+module-declaration:
+    'explicit'? 'framework'? 'module' module-id attributes? '{' module-member* '}'
+    'extern' 'module' module-id string-literal
+
+module-id:
+    identifier ('.' identifier)*
+
+module-member:
+    requires-declaration
+    header-declaration
+    umbrella-dir-declaration
+    submodule-declaration
+    export-declaration
+    export-as-declaration
+    use-declaration
+    link-declaration
+    config-macros-declaration
+    conflict-declaration
+
+requires-declaration:
+    'requires' feature-list
+
+feature-list:
+    feature (',' feature)*
+
+feature:
+    '!'? identifier
+
+header-declaration:
+    'private'? 'textual'? header string-literal header-attrs?
+    'umbrella' 'header' string-literal header-attrs?
+    'exclude' 'header' string-literal header-attrs?
+
+header-attrs:
+    '{' header-attr* '}'
+
+header-attr:
+    'size' integer-literal
+    'mtime' integer-literal
+
+umbrella-dir-declaration:
+    'umbrella' string-literal
+
+submodule-declaration:
+    module-declaration
+    inferred-submodule-declaration
+
+inferred-submodule-declaration:
+    'explicit'? 'framework'? 'module' '*' attributes? '{' inferred-submodule-member* '}'
+
+inferred-submodule-member:
+    'export' '*'
+
+export-declaration:
+    'export' wildcard-module-id
+
+wildcard-module-id:
+    identifier
+    '*'
+    identifier '.' wildcard-module-id
+
+export-as-declaration:
+    'export_as' identifier
+
+use-declaration:
+    'use' module-id
+
+link-declaration:
+    'link' 'framework'? string-literal
+
+config-macros-declaration:
+    'config_macros' attributes? config-macro-list?
+
+config-macro-list:
+    identifier (',' identifier)*
+
+conflict-declaration:
+    'conflict' module-id ',' string-literal
+
+attributes:
+    attribute+
+
+attribute:
+    '[' identifier ']'
+
+identifier:
+    nondigit (nondigit | digit)*
+
+nondigit:
+    [a-zA-Z_]
+
+digit:
+    [0-9]
