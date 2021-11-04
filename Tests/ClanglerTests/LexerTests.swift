@@ -138,4 +138,20 @@ final class LexerTests: XCTestCase {
         XCTAssertEqual(lines, [1, 1, 1, 2, 2, 3, 4])
         XCTAssertEqual(columns, [1, 8, 14, 5, 12, 1, 1])
     }
+
+    func testUnrecognizedCharacterEmitsError() {
+        let contents = "-"
+        let results = subject.scanAllTokens(fileContents: contents).errors.map(\.value)
+        XCTAssertEqual(results, [
+            ParseError.unrecognizedCharacter("-")
+        ])
+    }
+
+    func testUnrecognizedCharacterAfterForwardSlashEmitsError() {
+        let contents = "/a"
+        let results = subject.scanAllTokens(fileContents: contents).errors.map(\.value)
+        XCTAssertEqual(results, [
+            ParseError.unrecognizedCharacter("/")
+        ])
+    }
 }
