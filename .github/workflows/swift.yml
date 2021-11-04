@@ -14,9 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install LLVM
-        run: sudo apt-get install -y llvm-10
-
       - name: Build
         run: swift build -v
 
@@ -25,7 +22,7 @@ jobs:
 
       - name: Covert Swift coverage report to lcov
         run: |
-          llvm-cov-10 export -format="lcov" \
+          llvm-cov export -format="lcov" \
           -instr-profile=.build/debug/codecov/default.profdata \
           .build/debug/ClanglerPackageTests.xctest > ./coverage.lcov
 
