@@ -1,0 +1,2 @@
+ignore:
+  - Tests  # ignore the tests folder
