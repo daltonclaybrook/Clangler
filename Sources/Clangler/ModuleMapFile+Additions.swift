@@ -109,3 +109,23 @@ public extension ModuleMember {
         }
     }
 }
+
+public extension SubmoduleDeclaration {
+    var module: ModuleDeclaration? {
+        switch self {
+        case .module(let declaration):
+            return declaration
+        case .inferred:
+            return nil
+        }
+    }
+
+    var inferred: InferredSubmoduleDeclaration? {
+        switch self {
+        case .inferred(let declaration):
+            return declaration
+        case .module:
+            return nil
+        }
+    }
+}

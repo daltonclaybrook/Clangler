@@ -179,4 +179,80 @@ final class ParserTests: XCTestCase {
             HeaderAttribute(key: "mtime", value: 456)
         ])
     }
+
+    func testMultipleHeadersAreParsed() throws {
+        let contents = """
+        module MyLib {
+            header "MyLib.h"
+            header "OtherHeader.h"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let headerFiles = file.moduleDeclarations[0].local?.members
+            .compactMap(\.header)
+            .map(\.filePath) ?? []
+        XCTAssertEqual(headerFiles, ["MyLib.h", "OtherHeader.h"])
+    }
+
+    func testUmbrellaDirectoryIsParsed() throws {
+        let contents = """
+        module MyLib {
+            umbrella "MyDirectory"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].umbrellaDirectory,
+            UmbrellaDirectoryDeclaration(filePath: "MyDirectory")
+        )
+    }
+
+    func testSubmoduleIsParsed() throws {
+        let contents = """
+        module MyLib {
+            explicit module MySubLib.Foo {
+                private header "MySubLib.h"
+            }
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].submodule?.module?.local,
+            LocalModuleDeclaration(
+                explicit: true,
+                framework: false,
+                moduleId: ModuleId(dotSeparatedIdentifiers: ["MySubLib", "Foo"]),
+                attributes: [],
+                members: [
+                    .header(HeaderDeclaration(kind: .standard(private: true), filePath: "MySubLib.h", headerAttributes: []))
+                ]
+            )
+        )
+    }
+
+    func testInferredSubmoduleIsParsed() throws {
+        let contents = """
+        module MyLib {
+            explicit framework module * [system] {
+                export *
+            }
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].submodule?.inferred,
+            InferredSubmoduleDeclaration(
+                explicit: true,
+                framework: true,
+                attributes: ["system"],
+                members: [ InferredSubmoduleMember() ]
+            )
+        )
+    }
 }
