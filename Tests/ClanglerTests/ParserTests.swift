@@ -255,4 +255,37 @@ final class ParserTests: XCTestCase {
             )
         )
     }
+
+    func testExportsAreParsed() throws {
+        let contents = """
+        module MyLib {
+            export *
+            export Foo
+            export Bar.Baz
+            export Fizz.Buzz.*
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members
+            .compactMap(\.export)
+            .map(\.moduleId) ?? []
+        XCTAssertEqual(members, [
+            WildcardModuleId(
+                dotSeparatedIdentifiers: [],
+                trailingStar: true
+            ),
+            WildcardModuleId(
+                dotSeparatedIdentifiers: ["Foo"],
+                trailingStar: false
+            ),
+            WildcardModuleId(
+                dotSeparatedIdentifiers: ["Bar", "Baz"],
+                trailingStar: false
+            ),
+            WildcardModuleId(
+                dotSeparatedIdentifiers: ["Fizz", "Buzz"],
+                trailingStar: true
+            )
+        ])
+    }
 }
