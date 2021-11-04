@@ -88,4 +88,95 @@ final class ParserTests: XCTestCase {
             )
         )
     }
+
+    func testStandardHeaderIsParsed() throws {
+        let contents = """
+        module MyLib {
+            private header "MyLib.h"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].header,
+            HeaderDeclaration(
+                kind: .standard(private: true),
+                filePath: "MyLib.h",
+                headerAttributes: []
+            )
+        )
+    }
+
+    func testTextualHeaderIsParsed() throws {
+        let contents = """
+        module MyLib {
+            textual header "MyLib.h"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].header,
+            HeaderDeclaration(
+                kind: .textual(private: false),
+                filePath: "MyLib.h",
+                headerAttributes: []
+            )
+        )
+    }
+
+    func testUmbrellaHeaderIsParsed() throws {
+        let contents = """
+        module MyLib {
+            umbrella header "MyLib.h"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].header,
+            HeaderDeclaration(
+                kind: .umbrella,
+                filePath: "MyLib.h",
+                headerAttributes: []
+            )
+        )
+    }
+
+    func testExcludeHeaderIsParsed() throws {
+        let contents = """
+        module MyLib {
+            exclude header "MyLib.h"
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        XCTAssertEqual(members.count, 1)
+        XCTAssertEqual(
+            members[0].header,
+            HeaderDeclaration(
+                kind: .exclude,
+                filePath: "MyLib.h",
+                headerAttributes: []
+            )
+        )
+    }
+
+    func testHeaderAttributesAreParsed() throws {
+        let contents = """
+        module MyLib {
+            header "MyLib.h" { size 123 mtime 456 }
+        }
+        """
+        let file = try subject.parse(fileContents: contents).get()
+        let members = file.moduleDeclarations[0].local?.members ?? []
+        let attributes = members[0].header?.headerAttributes ?? []
+        XCTAssertEqual(attributes, [
+            HeaderAttribute(key: "size", value: 123),
+            HeaderAttribute(key: "mtime", value: 456)
+        ])
+    }
 }
