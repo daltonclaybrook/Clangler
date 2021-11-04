@@ -9,6 +9,14 @@ final class LexerTests: XCTestCase {
         subject = Lexer()
     }
 
+    func testEmptyStringIsScanned() {
+        let contents = ""
+        let results = subject.scanAllTokens(fileContents: contents)
+        let tokenTypes = results.tokens.map(\.type)
+        XCTAssertEqual(tokenTypes, [.endOfFile])
+        XCTAssertTrue(results.errors.isEmpty)
+    }
+
     func testAllSymbolsAreScannedWithoutErrors() {
         let contents = ".,!*{}[]"
         let results = subject.scanAllTokens(fileContents: contents)

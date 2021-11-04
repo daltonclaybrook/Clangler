@@ -17,10 +17,6 @@ public struct Cursor {
     }
 
     public init(string: String) {
-        guard !string.isEmpty else {
-            fatalError("Attempted to initialize Cursor with empty string")
-        }
-
         self.string = string
         self.currentIndex = string.startIndex
     }

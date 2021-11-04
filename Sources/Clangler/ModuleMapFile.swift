@@ -3,7 +3,7 @@
 // https://clang.llvm.org/docs/Modules.html#module-map-language
 
 /// Represents a complete module map file, which is a collection of declarations
-public struct ModuleMapFile {
+public struct ModuleMapFile: Equatable {
     /// The root-level module declarations in the file
     public var moduleDeclarations: [ModuleDeclaration]
 
@@ -14,7 +14,7 @@ public struct ModuleMapFile {
 
 /// Represents a module declaration, which can be a module that is defined locally
 /// this the containing file, or externally in a referenced file
-public enum ModuleDeclaration {
+public enum ModuleDeclaration: Equatable {
     /// A local module declaration
     case local(LocalModuleDeclaration)
     /// A reference to a module declared in another file
@@ -22,7 +22,7 @@ public enum ModuleDeclaration {
 }
 
 /// A module declared locally in the containing file
-public struct LocalModuleDeclaration {
+public struct LocalModuleDeclaration: Equatable {
     /// Can only be applied to a submodule. The contents of explicit submodules are
     /// only made available when the submodule itself was explicitly named in an import
     /// declaration or was re-exported from an imported module.
@@ -52,7 +52,7 @@ public struct LocalModuleDeclaration {
 }
 
 /// A module declared in a different file and merely referenced from the containing file
-public struct ExternModuleDeclaration {
+public struct ExternModuleDeclaration: Equatable {
     /// The identifier name of the module
     public var moduleId: ModuleId
     /// The file where the module is declared. The file can be referenced either by an
@@ -66,7 +66,7 @@ public struct ExternModuleDeclaration {
 }
 
 /// The identifier name of a module
-public struct ModuleId {
+public struct ModuleId: Equatable {
     /// The list of identifier strings that comprise the full identifier when dot-joined
     public var dotSeparatedIdentifiers: [String]
 
@@ -76,7 +76,7 @@ public struct ModuleId {
 }
 
 /// The various kinds of child members a module declaration can possess
-public enum ModuleMember {
+public enum ModuleMember: Equatable {
     /// Specifies the requirements that an importing translation unit must satisfy to use the module.
     case requires(RequiresDeclaration)
     /// Specifies that a particular header is associated with the enclosing module.
@@ -102,7 +102,7 @@ public enum ModuleMember {
 }
 
 /// Specifies the requirements that an importing translation unit must satisfy to use the module.
-public struct RequiresDeclaration {
+public struct RequiresDeclaration: Equatable {
     /// The language dialects, platforms, environments and target specific features that must be
     /// present for the enclosing module to be accessible
     public var features: [Feature]
@@ -112,7 +112,7 @@ public struct RequiresDeclaration {
     }
 }
 
-public struct Feature {
+public struct Feature: Equatable {
     /// If true, indicates that the feature is incompatible with the module
     public var incompatible: Bool
     /// The string identifier of the feature
@@ -125,9 +125,9 @@ public struct Feature {
 }
 
 /// Specifies that a particular header is associated with the enclosing module.
-public struct HeaderDeclaration {
+public struct HeaderDeclaration: Equatable {
     /// Indicates how the header contributes to the module
-    public enum Kind {
+    public enum Kind: Equatable {
         /// Indicates a header that contributes to the enclosing module. Specifically, when the
         /// module is built, the named header will be parsed and its declarations will be (logically)
         /// placed into the enclosing submodule.
@@ -163,7 +163,7 @@ public struct HeaderDeclaration {
 
 /// The use of header attributes avoids the need for Clang to speculatively `stat` every header
 /// referenced by a module map, but should typically only be used in machine-generated module maps
-public struct HeaderAttribute {
+public struct HeaderAttribute: Equatable {
     /// The attribute key identifier
     let key: String
     /// The attribute value integer
@@ -176,7 +176,7 @@ public struct HeaderAttribute {
 }
 
 /// Specifies that all of the headers in the specified directory should be included within the module.
-public struct UmbrellaDirectoryDeclaration {
+public struct UmbrellaDirectoryDeclaration: Equatable {
     /// The file path string of the umbrella directory
     public var filePath: String
 
@@ -186,7 +186,7 @@ public struct UmbrellaDirectoryDeclaration {
 }
 
 /// Describes modules that are nested within their enclosing module.
-public enum SubmoduleDeclaration {
+public enum SubmoduleDeclaration: Equatable {
     /// A standard module declaration
     case module(ModuleDeclaration)
     /// Describes a set of submodules that correspond to any headers that are part of the module
@@ -196,7 +196,7 @@ public enum SubmoduleDeclaration {
 
 /// Describes a set of submodules that correspond to any headers that are part of the module
 /// but are not explicitly described by a header-declaration.
-public struct InferredSubmoduleDeclaration {
+public struct InferredSubmoduleDeclaration: Equatable {
     /// The contents of explicit submodules are only made available when the submodule itself was
     /// explicitly named in an import declaration or was re-exported from an imported module.
     public var explicit: Bool
@@ -221,12 +221,12 @@ public struct InferredSubmoduleDeclaration {
 }
 
 /// A wildcard export declaration (i.e. `export *`)
-public struct InferredSubmoduleMember {
+public struct InferredSubmoduleMember: Equatable {
     public init() {}
 }
 
 /// Specifies which imported modules will automatically be re-exported as part of a given module’s API.
-public struct ExportDeclaration {
+public struct ExportDeclaration: Equatable {
     /// The wildcard identifier indicating which modules will be re-exported
     public var moduleId: WildcardModuleId
 
@@ -236,7 +236,7 @@ public struct ExportDeclaration {
 }
 
 /// A wildcard identifier indicating which modules will be re-exported
-public struct WildcardModuleId {
+public struct WildcardModuleId: Equatable {
     /// The list of string identifiers making up the prefix of a module identifier
     public var dotSeparatedIdentifiers: [String]
     /// Whether the module identifier is appended with a `*`, indicating a wildcard
@@ -249,7 +249,7 @@ public struct WildcardModuleId {
 }
 
 /// Specifies that the current module will have its interface re-exported by the named module.
-public struct ExportAsDeclaration {
+public struct ExportAsDeclaration: Equatable {
     /// The module that the current module will be re-exported through. Only top-level modules can
     /// be re-exported.
     public var identifier: String
@@ -260,7 +260,7 @@ public struct ExportAsDeclaration {
 }
 
 /// Specifies another module that the current top-level module intends to use.
-public struct UseDeclaration {
+public struct UseDeclaration: Equatable {
     /// The module to be used by the top-level module
     public var moduleID: ModuleId
 
@@ -271,7 +271,7 @@ public struct UseDeclaration {
 
 /// Specifies a library or framework against which a program should be linked if the enclosing module
 /// is imported in any translation unit in that program.
-public struct LinkDeclaration {
+public struct LinkDeclaration: Equatable {
     /// Whether the linker flag should take the form `-lMyLib` or `-framework MyFramework`
     public var framework: Bool
     /// The name of the library or framework to link
@@ -284,7 +284,7 @@ public struct LinkDeclaration {
 }
 
 /// Specifies the set of configuration macros that have an effect on the API of the enclosing module.
-public struct ConfigMacrosDeclaration {
+public struct ConfigMacrosDeclaration: Equatable {
     /// Optional attributes used in the declaration
     public var attributes: [String]
     /// The list of names of the macros
@@ -298,7 +298,7 @@ public struct ConfigMacrosDeclaration {
 
 /// Describes a case where the presence of two different modules in the same translation unit is likely
 /// to cause a problem.
-public struct ConflictDeclaration {
+public struct ConflictDeclaration: Equatable {
     /// Specifies the module with which the enclosing module conflicts
     public var moduleId: ModuleId
     /// A message to be provided as part of the compiler diagnostic when two modules conflict.
