@@ -116,7 +116,7 @@ final class LexerTests: XCTestCase {
 
     func testEscapedNewlineInStringLiteralIsScanned() {
         let contents = """
-        "Escaped\
+        "Escaped\\
         "
         """
         let results = subject.scanAllTokens(fileContents: contents)

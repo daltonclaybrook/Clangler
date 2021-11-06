@@ -127,6 +127,9 @@ public final class Lexer: LexerType {
 
             lexeme.append(next)
             switch next {
+            case "\\" where cursor.peek().isNewline:
+                lexeme.removeLast() // remove the escape character from the string
+                lexeme.append(cursor.advance())
             case "\"":
                 // Lexeme is terminated with the closing quote. make the token.
                 makeToken(type: .stringLiteral, lexeme: lexeme)
