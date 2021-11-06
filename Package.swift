@@ -1,25 +1,21 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.4
 
 import PackageDescription
 
 let package = Package(
     name: "Clangler",
     platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13)
+        .macOS(.v10_10),
+        .iOS(.v9),
+        .tvOS(.v9),
+        .watchOS(.v2)
     ],
     products: [
         .executable(name: "ClanglerClient", targets: ["ClanglerClient"]),
         .library(name: "Clangler", targets: ["Clangler"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
-    ],
     targets: [
-        .target(name: "ClanglerClient", dependencies: [
-            .product(name: "ArgumentParser", package: "swift-argument-parser"),
-            "Clangler"
-        ]),
+        .executableTarget(name: "ClanglerClient", dependencies: ["Clangler"]),
         .target(name: "Clangler"),
         .testTarget(name: "ClanglerTests", dependencies: ["Clangler"]),
     ]

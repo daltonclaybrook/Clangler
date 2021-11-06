@@ -46,6 +46,6 @@ extension Generator.Indentation {
     }
 }
 
-public protocol Generating {
+protocol Generating {
     func generate(with indentation: Generator.Indentation) -> String
 }

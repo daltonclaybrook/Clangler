@@ -10,13 +10,7 @@ protocol LocalModuleDeclarationType: Generating {
 
 extension LocalModuleDeclaration: LocalModuleDeclarationType {
     var moduleIdString: String {
-        moduleId.description
-    }
-}
-
-extension ModuleId: CustomStringConvertible {
-    public var description: String {
-        dotSeparatedIdentifiers.joined(separator: ".")
+        moduleId.rawValue
     }
 }
 

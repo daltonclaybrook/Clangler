@@ -16,6 +16,16 @@ public extension ModuleDeclaration {
             return nil
         }
     }
+
+    /// Get the module identifier for the declaration regardless if it is a local or extern declaration
+    var moduleId: ModuleId {
+        switch self {
+        case .local(let declaration):
+            return declaration.moduleId
+        case .extern(let declaration):
+            return declaration.moduleId
+        }
+    }
 }
 
 public extension ModuleMember {
@@ -127,5 +137,20 @@ public extension SubmoduleDeclaration {
         case .module:
             return nil
         }
+    }
+}
+
+extension ModuleId: ExpressibleByStringLiteral, RawRepresentable {
+    public var rawValue: String {
+        dotSeparatedIdentifiers.joined(separator: ".")
+    }
+
+    public init(stringLiteral value: String) {
+        self.init(rawValue: value)
+    }
+
+    public init(rawValue: String) {
+        let components = rawValue.components(separatedBy: ".")
+        self.init(dotSeparatedIdentifiers: components)
     }
 }

@@ -1,12 +1,12 @@
 extension ModuleMapFile: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let declarationStrings = moduleDeclarations.map { $0.generate(with: indentation) }
         return declarationStrings.joined(separator: "\n\n")
     }
 }
 
 extension ModuleDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         switch self {
         case .local(let declaration):
             return declaration.generate(with: indentation)
@@ -17,7 +17,7 @@ extension ModuleDeclaration: Generating {
 }
 
 extension LocalModuleDeclarationType {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let declarationLine = generateDeclarationLine(with: indentation)
         let membersString = generateMembers(with: indentation.incrementDepth())
         let closingBraceLine = indentation.stringValue + "}"
@@ -51,20 +51,20 @@ extension LocalModuleDeclarationType {
 }
 
 extension ExternModuleDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let string = "extern module \(moduleId.generate(with: indentation)) \(filePath.quoted)"
         return indentation.stringValue + string
     }
 }
 
 extension ModuleId: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         dotSeparatedIdentifiers.joined(separator: ".")
     }
 }
 
 extension ModuleMember: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         switch self {
         case .requires(let declaration):
             return declaration.generate(with: indentation)
@@ -91,7 +91,7 @@ extension ModuleMember: Generating {
 }
 
 extension RequiresDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let featuresString = features
             .map { $0.generate(with: indentation) }
             .joined(separator: ", ")
@@ -101,14 +101,14 @@ extension RequiresDeclaration: Generating {
 }
 
 extension Feature: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let prefix = incompatible ? "!" : ""
         return prefix + identifier
     }
 }
 
 extension HeaderDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         var components: [String] = []
         switch kind {
         case .standard(let isPrivate):
@@ -142,14 +142,14 @@ extension HeaderDeclaration: Generating {
 }
 
 extension UmbrellaDirectoryDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let string = "umbrella \(filePath.quoted)"
         return indentation.stringValue + string
     }
 }
 
 extension SubmoduleDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         switch self {
         case .module(let declaration):
             return declaration.generate(with: indentation)
@@ -160,19 +160,19 @@ extension SubmoduleDeclaration: Generating {
 }
 
 extension InferredSubmoduleMember: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         indentation.stringValue + "export *"
     }
 }
 
 extension ExportDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         indentation.stringValue + "export \(moduleId.generate(with: indentation))"
     }
 }
 
 extension WildcardModuleId: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         var components = dotSeparatedIdentifiers
         if trailingStar {
             components.append("*")
@@ -182,19 +182,19 @@ extension WildcardModuleId: Generating {
 }
 
 extension ExportAsDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         indentation.stringValue + "export_as \(identifier)"
     }
 }
 
 extension UseDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         indentation.stringValue + "use \(moduleID.generate(with: indentation))"
     }
 }
 
 extension LinkDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         var components = ["link"]
         if framework {
             components.append("framework")
@@ -205,7 +205,7 @@ extension LinkDeclaration: Generating {
 }
 
 extension ConfigMacrosDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         var components = ["config_macros"]
         let generatedAttributes = attributes.map { "[\($0)]" }
         components.append(contentsOf: generatedAttributes)
@@ -218,7 +218,7 @@ extension ConfigMacrosDeclaration: Generating {
 }
 
 extension ConflictDeclaration: Generating {
-    public func generate(with indentation: Generator.Indentation) -> String {
+    func generate(with indentation: Generator.Indentation) -> String {
         let string = "conflict \(moduleId.generate(with: indentation)), \(diagnosticMessage.quoted)"
         return indentation.stringValue + string
     }
