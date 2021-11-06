@@ -17,11 +17,13 @@ public final class Lexer: LexerType {
 
     public init() {}
 
+    /// Load a module map file from the provided `fileURL`, scan it, and return a list of tokens
     public func scanAllTokens(fileURL: URL) throws -> LexerResults {
         let fileContents = try String(contentsOf: fileURL)
         return scanAllTokens(fileContents: fileContents)
     }
 
+    /// Scan the provided contents of a module map file and return a list of tokens
     public func scanAllTokens(fileContents: String) -> LexerResults {
         var cursor = Cursor(string: fileContents)
         scannedTokens = []

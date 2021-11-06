@@ -1,3 +1,4 @@
+/// The various types of tokens that make up the Clang module map language grammar
 public enum TokenType {
     case dot // '.'
     case comma // ','

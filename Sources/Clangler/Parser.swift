@@ -12,11 +12,13 @@ public final class Parser {
         self.lexer = lexer
     }
 
+    /// Parse the module map file at the provided file URL and return the parsed AST representation, or a list of errors on failure
     public func parseFile(at url: URL) throws -> Result<ModuleMapFile, [Located<ParseError>]> {
         let fileContents = try String(contentsOf: url)
         return parse(fileContents: fileContents)
     }
 
+    /// Parse the provided module map file contents and return the parsed AST representation, or a list of errors on failure
     public func parse(fileContents: String) -> Result<ModuleMapFile, [Located<ParseError>]> {
         (tokens, errors) = lexer.scanAllTokens(fileContents: fileContents)
         currentTokenIndex = 0
