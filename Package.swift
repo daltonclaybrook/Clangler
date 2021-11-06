@@ -1,4 +1,4 @@
-// swift-tools-version:5.4
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "Clangler", targets: ["Clangler"])
     ],
     targets: [
-        .executableTarget(name: "ClanglerClient", dependencies: ["Clangler"]),
+        .target(name: "ClanglerClient", dependencies: ["Clangler"]),
         .target(name: "Clangler"),
         .testTarget(name: "ClanglerTests", dependencies: ["Clangler"]),
     ]
