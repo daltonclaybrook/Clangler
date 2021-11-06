@@ -90,14 +90,14 @@ func printAllSyntaxErrors(fileURL: URL) throws {
 
 ## Notable types
 
-* **Parser** — Used to parse the contents of a Clang module map file into an abstract syntax tree (AST) representation
-* **Lexer** — Scans a module map string and produces tokens in the module map grammar. You will typically not instantiate this type directly as `Parser` uses it under the hood.
-* **Generator** — Used to generate module map file contents from an abstract syntax tree (AST) representation. This is the reverse of `Parser`.
-* **ModuleMapFile** — The root node in the module map AST. This represents a complete module map file as a collection of declarations.
+* [**Parser**](https://github.com/daltonclaybrook/Clangler/blob/main/Sources/Clangler/Parser.swift) — Used to parse the contents of a Clang module map file into an abstract syntax tree (AST) representation
+* [**Lexer**](https://github.com/daltonclaybrook/Clangler/blob/main/Sources/Clangler/Lexer.swift) — Scans a module map string and produces tokens in the module map grammar. You will typically not instantiate this type directly as `Parser` uses it under the hood.
+* [**Generator**](https://github.com/daltonclaybrook/Clangler/blob/main/Sources/Clangler/Generator.swift) — Used to generate module map file contents from an abstract syntax tree (AST) representation. This is the reverse of `Parser`.
+* [**ModuleMapFile**](https://github.com/daltonclaybrook/Clangler/blob/main/Sources/Clangler/ModuleMapFile.swift) — The root node in the module map AST. This represents a complete module map file as a collection of declarations.
 
 ## Installation
 
-In Xcode, you can add this package to your project by selecting File ➡ Swift Packages ➡ Add Package Dependency… Enter the Clangler GitHub URL and follow the prompts.
+In Xcode, you can add this package to your project by selecting File -> Swift Packages -> Add Package Dependency… Enter the Clangler GitHub URL and follow the prompts.
 
 If you use a Package.swift file instead, add the following line inside of your package dependencies array:
 
