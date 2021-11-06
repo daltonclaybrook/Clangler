@@ -72,6 +72,21 @@ func buildModuleMapFromScratch(moduleName: String, headerPaths: [String]) throws
 }
 ```
 
+Discover syntax errors in a file:
+
+```swift
+func printAllSyntaxErrors(fileURL: URL) throws {
+    let result = try Parser().parseFile(at: fileURL)
+    guard case .failure(let syntaxErrors) = result else {
+        return print("No syntax errors")
+    }
+
+    for error in syntaxErrors {
+        print("line: \(error.line), column: \(error.column), description: \(error.description)")
+    }
+}
+```
+
 ## Notable types
 
 * **Parser** — Used to parse the contents of a Clang module map file into an abstract syntax tree (AST) representation
